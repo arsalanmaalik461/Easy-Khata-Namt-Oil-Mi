@@ -3,7 +3,6 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/theme.dart';
-import '../../core/money.dart';
 
 AppLocalizations L(BuildContext c) => AppLocalizations.of(c)!;
 
