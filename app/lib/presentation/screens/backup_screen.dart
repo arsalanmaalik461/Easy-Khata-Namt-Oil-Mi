@@ -142,7 +142,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
       }
     } catch (e) {
       if (mounted) {
-        showSnack(context, l.restoreFailed, error: true);
+        showSnack(context, l.restoreFailed(e), error: true);
         setState(() => _busy = false);
       }
     }
