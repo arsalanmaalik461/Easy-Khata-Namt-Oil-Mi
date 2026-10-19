@@ -44,7 +44,7 @@ class AutoBackup {
             requiresDeviceIdle: false,
             requiresStorageNotLow: false,
           ),
-          existingWorkPolicy: ExistingWorkPolicy.replace,
+          existingWorkPolicy: ExistingPeriodicWorkPolicy.replace,
         );
       } else {
         await Workmanager().cancelByUniqueName(taskName);
