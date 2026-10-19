@@ -45,7 +45,7 @@ dependencies:
   extension_google_sign_in_as_googleapis_auth: ^2.0.12
 
   # Background work (24h auto-backup)
-  workmanager: ^0.5.2
+  workmanager: ^0.10.10
 
   # Deep links (WhatsApp, SMS)
   url_launcher: ^6.3.1
