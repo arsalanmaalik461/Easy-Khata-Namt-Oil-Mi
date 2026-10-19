@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/money.dart';
+import '../../data/contact_picker.dart';
 import '../providers.dart';
 import '../widgets/ui.dart';
 
@@ -19,6 +20,7 @@ class _PartyFormScreenState extends ConsumerState<PartyFormScreen> {
   final _form = GlobalKey<FormState>();
   final _name = TextEditingController();
   final _phone = TextEditingController();
+  final _whatsapp = TextEditingController();
   final _address = TextEditingController();
   final _code = TextEditingController();
   final _business = TextEditingController();
@@ -47,19 +49,42 @@ class _PartyFormScreenState extends ConsumerState<PartyFormScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            TextFormField(
-                controller: _name,
-                decoration: InputDecoration(
-                    labelText:
-                        isCust ? l.customerName : l.supplierName),
-                validator: (v) =>
-                    (v ?? '').trim().isEmpty ? l.requiredField : null),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                      controller: _name,
+                      decoration: InputDecoration(
+                          labelText: isCust
+                              ? l.customerName
+                              : l.supplierName),
+                      validator: (v) =>
+                          (v ?? '').trim().isEmpty
+                              ? l.requiredField
+                              : null),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon:
+                      const Icon(Icons.contacts_outlined),
+                  tooltip: l.pickFromContacts,
+                  onPressed: _pickContact,
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
             TextFormField(
                 controller: _phone,
                 keyboardType: TextInputType.phone,
                 decoration:
                     InputDecoration(labelText: l.phone)),
+            const SizedBox(height: 12),
+            TextFormField(
+                controller: _whatsapp,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                    labelText: l.whatsappNumber,
+                    hintText: l.whatsappNumberHint)),
             const SizedBox(height: 12),
             TextFormField(
                 controller: _address,
@@ -103,14 +128,33 @@ class _PartyFormScreenState extends ConsumerState<PartyFormScreen> {
     );
   }
 
-  Future<void> _load() async {
-    final db = ref.read(databaseProvider);
+  /// Fill name/phone from the phone's contact list (new scope #6).
+  Future<void> _pickContact() async {
+    final res = await ContactPickerService().pickContact();
+    if (!mounted) return;
+    if (res.isOk) {
+      final c = res.value;
+      setState(() {
+        if (_name.text.trim().isEmpty) {
+          _name.text = c.name;
+        }
+        if (_phone.text.trim().isEmpty) {
+          _phone.text = c.phone;
+        }
+      });
+    } else {
+      showSnack(context, res.error, error: true);
+    }
+  }
+
+  Future<void> _load() async {    final db = ref.read(databaseProvider);
     if (widget.kind == 'customer') {
       final c = await (db.select(db.customers)
             ..where((t) => t.id.equals(widget.partyId!)))
           .getSingle();
       _name.text = c.name;
       _phone.text = c.phone;
+      _whatsapp.text = c.whatsapp;
       _address.text = c.address;
       _code.text = c.code;
       _business.text = c.businessName;
@@ -121,6 +165,7 @@ class _PartyFormScreenState extends ConsumerState<PartyFormScreen> {
           .getSingle();
       _name.text = s.name;
       _phone.text = s.phone;
+      _whatsapp.text = s.whatsapp;
       _address.text = s.address;
       _code.text = s.code;
       _business.text = s.businessName;
@@ -141,6 +186,7 @@ class _PartyFormScreenState extends ConsumerState<PartyFormScreen> {
           await svc.updateCustomer(widget.partyId!,
               name: _name.text.trim(),
               phone: _phone.text.trim(),
+              whatsapp: _whatsapp.text.trim(),
               address: _address.text.trim(),
               code: _code.text.trim(),
               businessName: _business.text.trim(),
@@ -149,6 +195,7 @@ class _PartyFormScreenState extends ConsumerState<PartyFormScreen> {
           await svc.updateSupplier(widget.partyId!,
               name: _name.text.trim(),
               phone: _phone.text.trim(),
+              whatsapp: _whatsapp.text.trim(),
               address: _address.text.trim(),
               code: _code.text.trim(),
               businessName: _business.text.trim(),
@@ -158,6 +205,7 @@ class _PartyFormScreenState extends ConsumerState<PartyFormScreen> {
         await svc.createCustomer(
             name: _name.text.trim(),
             phone: _phone.text.trim(),
+            whatsapp: _whatsapp.text.trim(),
             address: _address.text.trim(),
             code: _code.text.trim(),
             businessName: _business.text.trim(),
@@ -167,6 +215,7 @@ class _PartyFormScreenState extends ConsumerState<PartyFormScreen> {
         await svc.createSupplier(
             name: _name.text.trim(),
             phone: _phone.text.trim(),
+            whatsapp: _whatsapp.text.trim(),
             address: _address.text.trim(),
             code: _code.text.trim(),
             businessName: _business.text.trim(),

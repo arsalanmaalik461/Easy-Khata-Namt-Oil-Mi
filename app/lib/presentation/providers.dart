@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../data/backup.dart';
+import '../data/biometric_auth.dart';
 import '../data/db.dart';
+import '../data/drive_backup.dart';
+import '../data/google_auth.dart';
 import '../data/reports.dart';
 import '../data/services.dart';
 
@@ -22,6 +25,23 @@ final reportsProvider =
 
 final backupProvider =
     Provider<BackupService>((ref) => BackupService(ref.watch(databaseProvider)));
+
+final googleAuthProvider =
+    Provider<GoogleAuthService>((ref) => GoogleAuthService(ref.watch(databaseProvider)));
+
+final driveBackupProvider =
+    Provider<DriveBackupService>((ref) => DriveBackupService(
+        ref.watch(databaseProvider), ref.watch(googleAuthProvider)));
+
+final biometricAuthProvider =
+    Provider<BiometricAuthService>((ref) => BiometricAuthService());
+
+/// Drive backup settings row (id=1).
+final driveSettingsProvider = StreamProvider<BackupSetting?>((ref) {
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.backupSettings)..where((t) => t.id.equals(1)))
+      .watchSingleOrNull();
+});
 
 final secureStorageProvider =
     Provider<FlutterSecureStorage>((ref) => const FlutterSecureStorage());

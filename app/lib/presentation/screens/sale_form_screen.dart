@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/theme.dart';
 import '../../core/money.dart';
 import '../../core/units.dart';
 import '../../data/services.dart';
 import '../providers.dart';
+import '../widgets/ek.dart';
 import '../widgets/ui.dart';
 
 enum DocMode { sale, purchase }
@@ -51,6 +53,12 @@ class _SaleFormScreenState extends ConsumerState<SaleFormScreen> {
   final List<_Line> _lines = [];
 
   bool get _isSale => widget.mode == DocMode.sale;
+
+  int _paidMinor() {
+    final v = evaluateExpression(_paid.text);
+    if (v == null || v <= 0) return 0;
+    return (v * 100).round();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -121,15 +129,18 @@ class _SaleFormScreenState extends ConsumerState<SaleFormScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            TextFormField(
-                controller: _paid,
-                keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true),
-                decoration: InputDecoration(
-                    labelText: l.paidAmount, prefixText: 'Rs '),
-                onChanged: (_) => setState(() {})),
+            Text(l.paidAmount,
+                style: const TextStyle(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            AmountKeypadInput(
+              controller: _paid,
+              accentColor: _isSale
+                  ? AppColors.liye
+                  : AppColors.diye,
+              onChanged: () => setState(() {}),
+            ),
             const SizedBox(height: 12),
-            if (parseAmountMinor(_paid.text) > 0) _accountPicker(),
+            if (_paidMinor() > 0) _accountPicker(),
             const SizedBox(height: 12),
             TextFormField(
                 controller: _notes,
@@ -375,7 +386,7 @@ class _SaleFormScreenState extends ConsumerState<SaleFormScreen> {
               items: items,
               discount: Money(parseAmountMinor(_discount.text)),
               tax: Money(parseAmountMinor(_tax.text)),
-              paidNow: Money(parseAmountMinor(_paid.text)),
+              paidNow: Money(_paidMinor()),
               accountId: _accountId,
               notes: _notes.text.trim(),
             )
@@ -384,7 +395,7 @@ class _SaleFormScreenState extends ConsumerState<SaleFormScreen> {
               items: items,
               discount: Money(parseAmountMinor(_discount.text)),
               tax: Money(parseAmountMinor(_tax.text)),
-              paidNow: Money(parseAmountMinor(_paid.text)),
+              paidNow: Money(_paidMinor()),
               accountId: _accountId,
               notes: _notes.text.trim(),
             );

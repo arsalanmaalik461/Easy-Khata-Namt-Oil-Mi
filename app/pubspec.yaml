@@ -38,6 +38,27 @@ dependencies:
   # Secure storage (PIN)
   flutter_secure_storage: ^9.2.4
 
+  # Google Sign-In + Drive backup
+  google_sign_in: ^6.2.2
+  googleapis: ^13.2.0
+  googleapis_auth: ^1.6.0
+  extension_google_sign_in_as_googleapis_auth: ^2.0.12
+
+  # Background work (24h auto-backup)
+  workmanager: ^0.5.2
+
+  # Deep links (WhatsApp, SMS)
+  url_launcher: ^6.3.1
+
+  # Camera/gallery for bill images
+  image_picker: ^1.0.8
+
+  # Fingerprint / biometric lock
+  local_auth: ^2.3.0
+
+  # Pick customer from phone contacts
+  flutter_contacts: ^1.1.9
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

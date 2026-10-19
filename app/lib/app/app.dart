@@ -12,10 +12,26 @@ import 'theme.dart';
 class NamtApp extends ConsumerWidget {
   const NamtApp({super.key});
 
+  /// Parses stored language codes: 'en', 'ur', 'ur-Latn' (Roman Urdu), 'sd'.
+  static Locale parseLocale(String? code) {
+    switch (code) {
+      case 'ur':
+        return const Locale('ur');
+      case 'ur-Latn':
+        return Locale.fromSubtags(
+            languageCode: 'ur', scriptCode: 'Latn');
+      case 'sd':
+        return const Locale('sd');
+      case 'en':
+      default:
+        return const Locale('en');
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
-    final locale = Locale(settings.valueOrNull?.language ?? 'en');
+    final locale = parseLocale(settings.valueOrNull?.language);
     final mode = switch (settings.valueOrNull?.themeMode) {
       'light' => ThemeMode.light,
       'dark' => ThemeMode.dark,
@@ -34,7 +50,13 @@ class NamtApp extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [Locale('en'), Locale('ur')],
+      supportedLocales: const [
+        Locale('en'),
+        Locale('ur'),
+        Locale.fromSubtags(
+            languageCode: 'ur', scriptCode: 'Latn'),
+        Locale('sd'),
+      ],
       home: const _Gate(),
     );
   }

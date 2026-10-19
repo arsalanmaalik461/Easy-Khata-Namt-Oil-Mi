@@ -135,7 +135,7 @@ app/
 ├── test/
 │   ├── unit/                # money, units, accounting tests
 │   └── integration/         # DB workflow tests
-└── android/                 # Android project (package: com.namtoilmil.namt_oil_mil)
+└── android/                 # Android project (package: com.arsu.digikhatabyarsu)
 ```
 
 ## Notes
@@ -144,3 +144,27 @@ app/
 - **Money:** stored as integer paisa — never floats.
 - **Balances:** customer positive = owes business; supplier positive = business owes.
 - **Database:** SQLite via Drift, file at app documents dir (`namt_oil_mil.sqlite`).
+
+## Google Sign-In / Drive backup setup (release builds)
+
+The app's Google Drive backup uses OAuth. For sign-in to work on the
+installed release APK, the **release keystore's SHA-1** must be registered
+in the Google Cloud Console OAuth client (package
+`com.arsu.digikhatabyarsu`). The debug SHA-1 will NOT work on release builds.
+
+```sh
+# Release keystore SHA-1 (use the actual release keystore path):
+keytool -list -v -keystore <release-keystore.jks> -alias <alias> | grep SHA1
+# Debug keystore (local dev only):
+keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android | grep SHA1
+```
+
+Steps:
+1. Google Cloud Console → APIs & Services → Credentials → Create OAuth client ID (Android).
+2. Package name: `com.arsu.digikhatabyarsu`, SHA-1: release keystore's SHA-1.
+3. Enable the Google Drive API for the project.
+4. Scopes requested by the app: `email`, `https://www.googleapis.com/auth/drive.file`
+   (app-created files only — least privilege).
+
+Without this setup, Google sign-in shows an error and the app keeps working
+fully offline (backup to Drive is simply unavailable until configured).

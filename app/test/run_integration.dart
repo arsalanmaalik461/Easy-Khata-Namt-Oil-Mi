@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart' hide isNotNull;
 import 'package:drift/native.dart';
+import 'package:sqlite3/sqlite3.dart';
 import 'package:namt_oil_mil/core/money.dart';
 import 'package:namt_oil_mil/core/units.dart';
 import 'package:namt_oil_mil/data/backup.dart';
@@ -280,6 +281,7 @@ Future<void> main() async {
   await workflowD();
   await workflowE();
   await backupTest();
+  await migrationV1toV2Test();
 
   print('\n=== Results: $_passed passed, $_failed failed ===');
   if (_failures.isNotEmpty) {
@@ -288,5 +290,102 @@ Future<void> main() async {
       print('  - $f');
     }
     exit(1);
+  }
+}
+
+/// Schema migration v1 -> v2: builds a minimal v1 database with raw SQL,
+/// opens it with the current AppDatabase, and verifies the new columns
+/// and tables exist with their defaults.
+Future<void> migrationV1toV2Test() async {
+  print('\n=== Migration v1 -> v2 ===');
+  final dir = await Directory.systemTemp.createTemp('namt-migration-');
+  try {
+    final path = '${dir.path}/v1.sqlite';
+    final raw = sqlite3.open(path);
+    try {
+      // Minimal v1 schema: customers/suppliers WITHOUT whatsapp/isFavorite,
+      // transactions WITHOUT imagePaths, no customer_reminders/backup_settings.
+      raw.execute('''
+        CREATE TABLE customers (
+          id TEXT NOT NULL PRIMARY KEY, name TEXT NOT NULL,
+          phone TEXT NOT NULL DEFAULT '', address TEXT NOT NULL DEFAULT '',
+          code TEXT NOT NULL DEFAULT '', business_name TEXT NOT NULL DEFAULT '',
+          notes TEXT NOT NULL DEFAULT '', opening_balance INTEGER NOT NULL DEFAULT 0,
+          balance INTEGER NOT NULL DEFAULT 0, active INTEGER NOT NULL DEFAULT 1,
+          created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
+      ''');
+      raw.execute('''
+        CREATE TABLE suppliers (
+          id TEXT NOT NULL PRIMARY KEY, name TEXT NOT NULL,
+          phone TEXT NOT NULL DEFAULT '', address TEXT NOT NULL DEFAULT '',
+          code TEXT NOT NULL DEFAULT '', business_name TEXT NOT NULL DEFAULT '',
+          notes TEXT NOT NULL DEFAULT '', opening_balance INTEGER NOT NULL DEFAULT 0,
+          balance INTEGER NOT NULL DEFAULT 0, active INTEGER NOT NULL DEFAULT 1,
+          created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
+      ''');
+      raw.execute('''
+        CREATE TABLE "transactions" (
+          id TEXT NOT NULL PRIMARY KEY, txn_number TEXT NOT NULL UNIQUE,
+          date INTEGER NOT NULL, category TEXT NOT NULL,
+          amount_minor INTEGER NOT NULL, party_kind TEXT,
+          party_id TEXT, payment_method TEXT NOT NULL DEFAULT 'cash',
+          reference TEXT NOT NULL DEFAULT '', description TEXT NOT NULL DEFAULT '',
+          status TEXT NOT NULL DEFAULT 'posted', reversed_by TEXT,
+          created_at INTEGER NOT NULL);
+      ''');
+      raw.execute(
+          "INSERT INTO customers (id, name, created_at, updated_at) VALUES ('c1', 'Old Customer', 1, 1);");
+      raw.execute('PRAGMA user_version = 1;');
+    } finally {
+      raw.dispose();
+    }
+
+    // Open with the v2 AppDatabase — migration should run.
+    final db = AppDatabase.forTesting(NativeDatabase(File(path)));
+    try {
+      Future<bool> hasColumn(String table, String column) async {
+        final rows = await db
+            .customSelect('PRAGMA table_info($table);')
+            .get();
+        return rows.any((r) => r.read<String>('name') == column);
+      }
+
+      Future<bool> hasTable(String table) async {
+        final rows = await db.customSelect(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='$table';",
+        ).get();
+        return rows.isNotEmpty;
+      }
+
+      check(await hasColumn('customers', 'whatsapp'),
+          'Migration: customers.whatsapp added');
+      check(await hasColumn('customers', 'is_favorite'),
+          'Migration: customers.is_favorite added');
+      check(await hasColumn('suppliers', 'whatsapp'),
+          'Migration: suppliers.whatsapp added');
+      check(await hasColumn('transactions', 'image_paths'),
+          'Migration: transactions.image_paths added');
+      check(await hasTable('customer_reminders'),
+          'Migration: customer_reminders created');
+      check(await hasTable('backup_settings'),
+          'Migration: backup_settings created');
+
+      // Existing data preserved, defaults applied.
+      final cust = await (db.select(db.customers)
+            ..where((t) => t.id.equals('c1')))
+          .getSingle();
+      checkEq(cust.name, 'Old Customer', 'Migration: data preserved');
+      checkEq(cust.whatsapp, '', 'Migration: whatsapp default empty');
+      checkEq(cust.isFavorite, false, 'Migration: isFavorite default false');
+
+      final settings = await (db.select(db.backupSettings)
+            ..where((t) => t.id.equals(1)))
+          .getSingleOrNull();
+      check(settings != null, 'Migration: backup_settings row seeded');
+    } finally {
+      await db.close();
+    }
+  } finally {
+    await dir.delete(recursive: true);
   }
 }

@@ -225,6 +225,50 @@ class ReportService {
         .get();
   }
 
+  /// Sales aggregation for the Sales dashboard (Team A).
+  ///
+  /// - [total]: sum of posted invoice totals in range
+  /// - [orders]: count of posted invoices in range
+  /// - [naqad]: cash received against those invoices (payments in range)
+  /// - [udhaar]: outstanding (total - paid) on those invoices
+  Future<SalesSummary> salesSummary(int from, int to) async {
+    final invQ = db.selectOnly(db.salesInvoices)
+      ..addColumns([
+        db.salesInvoices.totalMinor.sum(),
+        db.salesInvoices.paidMinor.sum(),
+        db.salesInvoices.id.count()
+      ])
+      ..where(db.salesInvoices.date.isBetweenValues(from, to) &
+          db.salesInvoices.status.isNotIn(['draft', 'cancelled']));
+    final r = await invQ.getSingle();
+    final total = r.read(db.salesInvoices.totalMinor.sum()) ?? 0;
+    final paid = r.read(db.salesInvoices.paidMinor.sum()) ?? 0;
+    final orders = r.read(db.salesInvoices.id.count()) ?? 0;
+    // Recent invoices for the "recent sales" list.
+    final recent = await (db.select(db.salesInvoices)
+          ..where((t) => t.date.isBetweenValues(from, to))
+          ..orderBy([(t) => OrderingTerm.desc(t.date)])
+          ..limit(20))
+        .get();
+    return SalesSummary(
+      total: Money(total),
+      orders: orders,
+      naqad: Money(paid),
+      udhaar: Money(total - paid),
+      recentInvoices: recent,
+    );
+  }
+
+  /// Most recent transaction date (ms) for a party, 0 when none.
+  Future<int> lastPartyTxnDate(String kind, String partyId) async {
+    final q = db.selectOnly(db.ledgerEntries)
+      ..addColumns([db.ledgerEntries.date.max()])
+      ..where(db.ledgerEntries.accountKind.equals(kind) &
+          db.ledgerEntries.accountId.equals(partyId));
+    final r = await q.getSingle();
+    return r.read(db.ledgerEntries.date.max()) ?? 0;
+  }
+
   Future<List<ProductionYieldRow>> productionYields(int from, int to) async {
     final batches = await (db.select(db.productionBatches)
           ..where((t) => t.date.isBetweenValues(from, to))
@@ -309,4 +353,20 @@ class ProductionYieldRow {
   final Money totalCost;
   ProductionYieldRow({required this.batch, required this.inputQty,
     required this.oilQty, required this.yieldPercent, required this.totalCost});
+}
+
+/// Aggregated sales figures for the Sales dashboard.
+class SalesSummary {
+  final Money total;
+  final int orders;
+  final Money naqad;
+  final Money udhaar;
+  final List<SalesInvoice> recentInvoices;
+  SalesSummary({
+    required this.total,
+    required this.orders,
+    required this.naqad,
+    required this.udhaar,
+    required this.recentInvoices,
+  });
 }

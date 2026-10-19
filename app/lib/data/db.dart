@@ -66,6 +66,8 @@ class Customers extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
   TextColumn get phone => text().withDefault(const Constant(''))();
+  /// WhatsApp number; empty means "same as phone".
+  TextColumn get whatsapp => text().withDefault(const Constant(''))();
   TextColumn get address => text().withDefault(const Constant(''))();
   TextColumn get code => text().withDefault(const Constant(''))();
   TextColumn get businessName => text().withDefault(const Constant(''))();
@@ -74,6 +76,8 @@ class Customers extends Table {
   IntColumn get openingBalance => integer().withDefault(const Constant(0))();
   IntColumn get balance => integer().withDefault(const Constant(0))();
   BoolColumn get active => boolean().withDefault(const Constant(true))();
+  /// 0/1 favorite (heart) toggle
+  BoolColumn get isFavorite => boolean().withDefault(const Constant(false))();
   IntColumn get createdAt => integer()();
   IntColumn get updatedAt => integer()();
   @override
@@ -84,6 +88,8 @@ class Suppliers extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
   TextColumn get phone => text().withDefault(const Constant(''))();
+  /// WhatsApp number; empty means "same as phone".
+  TextColumn get whatsapp => text().withDefault(const Constant(''))();
   TextColumn get address => text().withDefault(const Constant(''))();
   TextColumn get code => text().withDefault(const Constant(''))();
   TextColumn get businessName => text().withDefault(const Constant(''))();
@@ -127,6 +133,8 @@ class Transactions extends Table {
   /// posted | reversed
   TextColumn get status => text().withDefault(const Constant('posted'))();
   TextColumn get reversedBy => text().nullable()();
+  /// JSON list of local bill-image file paths, e.g. '["/path/a.jpg"]'
+  TextColumn get imagePaths => text().withDefault(const Constant('[]'))();
   IntColumn get createdAt => integer()();
   @override
   Set<Column> get primaryKey => {id};
@@ -372,6 +380,35 @@ class BackupMeta extends Table {
   TextColumn get checksum => text().withDefault(const Constant(''))();
 }
 
+/// Per-customer payment reminders ("Tareekh Rakhein").
+class CustomerReminders extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  /// references Customers.id (kept as text; no FK cascade so history survives)
+  TextColumn get customerId => text()();
+  /// ms since epoch
+  IntColumn get remindAt => integer()();
+  TextColumn get note => text().withDefault(const Constant(''))();
+  /// 0 = pending, 1 = done
+  IntColumn get done => integer().withDefault(const Constant(0))();
+  IntColumn get createdAt => integer()();
+}
+
+/// Google Drive backup settings (single row, id = 1).
+/// Kept as its own table (rather than BusinessSettings columns) so Drive
+/// concerns stay isolated from business profile settings.
+class BackupSettings extends Table {
+  IntColumn get id => integer()();
+  TextColumn get googleAccountEmail => text().withDefault(const Constant(''))();
+  /// 0/1 — 24h auto-backup enabled
+  IntColumn get autoBackupEnabled => integer().withDefault(const Constant(0))();
+  /// ms since epoch of last successful auto-backup; 0 = never
+  IntColumn get lastAutoBackupAt => integer().withDefault(const Constant(0))();
+  TextColumn get driveFolderId => text().withDefault(const Constant(''))();
+  IntColumn get updatedAt => integer()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 @DriftDatabase(tables: [
   BusinessSettings,
   Units,
@@ -401,6 +438,8 @@ class BackupMeta extends Table {
   PurchaseReturnItems,
   DocumentSequences,
   BackupMeta,
+  CustomerReminders,
+  BackupSettings,
 ])
 class AppDatabase extends _$AppDatabase {
   /// Opener for the production database file. Set by platform bootstrap
@@ -412,13 +451,31 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) async {
           await m.createAll();
           await _seed();
+        },
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            // v1 -> v2: WhatsApp numbers, bill images, favorites, reminders,
+            // Drive backup settings.
+            await m.addColumn(customers, customers.whatsapp);
+            await m.addColumn(customers, customers.isFavorite);
+            await m.addColumn(suppliers, suppliers.whatsapp);
+            await m.addColumn(transactions, transactions.imagePaths);
+            await m.createTable(customerReminders);
+            await m.createTable(backupSettings);
+            // Seed the single BackupSettings row for upgraded databases.
+            final now = DateTime.now().millisecondsSinceEpoch;
+            await into(backupSettings).insert(BackupSettingsCompanion.insert(
+              id: const Value(1),
+              updatedAt: now,
+            ));
+          }
         },
       );
 
@@ -454,6 +511,9 @@ class AppDatabase extends _$AppDatabase {
     // Settings row
     await into(businessSettings).insert(BusinessSettingsCompanion.insert(
       id: const Value(1), createdAt: now, updatedAt: now));
+    // Drive backup settings row (single row, id = 1)
+    await into(backupSettings).insert(BackupSettingsCompanion.insert(
+      id: const Value(1), updatedAt: now));
     // Document sequences
     for (final s in ['sale', 'purchase', 'payment', 'batch', 'return', 'txn']) {
       final prefix = {

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../core/money.dart';
@@ -22,6 +24,7 @@ class AccountingService {
   Future<String> createCustomer({
     required String name,
     String phone = '',
+    String whatsapp = '',
     String address = '',
     String code = '',
     String businessName = '',
@@ -32,7 +35,8 @@ class AccountingService {
     final now = _now();
     await db.transaction(() async {
       await db.into(db.customers).insert(CustomersCompanion.insert(
-            id: id, name: name, phone: Value(phone), address: Value(address),
+            id: id, name: name, phone: Value(phone), whatsapp: Value(whatsapp),
+            address: Value(address),
             code: Value(code), businessName: Value(businessName),
             notes: Value(notes), openingBalance: Value(openingBalance.minor),
             // balance starts at 0; _postTxn applies the opening balance below
@@ -54,17 +58,19 @@ class AccountingService {
   }
 
   Future<void> updateCustomer(String id,
-      {String? name, String? phone, String? address, String? code,
-       String? businessName, String? notes, bool? active}) async {
+      {String? name, String? phone, String? whatsapp, String? address, String? code,
+       String? businessName, String? notes, bool? active, bool? isFavorite}) async {
     await (db.update(db.customers)..where((t) => t.id.equals(id))).write(
       CustomersCompanion(
         name: name == null ? const Value.absent() : Value(name),
         phone: phone == null ? const Value.absent() : Value(phone),
+        whatsapp: whatsapp == null ? const Value.absent() : Value(whatsapp),
         address: address == null ? const Value.absent() : Value(address),
         code: code == null ? const Value.absent() : Value(code),
         businessName: businessName == null ? const Value.absent() : Value(businessName),
         notes: notes == null ? const Value.absent() : Value(notes),
         active: active == null ? const Value.absent() : Value(active),
+        isFavorite: isFavorite == null ? const Value.absent() : Value(isFavorite),
         updatedAt: Value(_now()),
       ),
     );
@@ -73,6 +79,7 @@ class AccountingService {
   Future<String> createSupplier({
     required String name,
     String phone = '',
+    String whatsapp = '',
     String address = '',
     String code = '',
     String businessName = '',
@@ -83,7 +90,8 @@ class AccountingService {
     final now = _now();
     await db.transaction(() async {
       await db.into(db.suppliers).insert(SuppliersCompanion.insert(
-            id: id, name: name, phone: Value(phone), address: Value(address),
+            id: id, name: name, phone: Value(phone), whatsapp: Value(whatsapp),
+            address: Value(address),
             code: Value(code), businessName: Value(businessName),
             notes: Value(notes), openingBalance: Value(openingBalance.minor),
             // balance starts at 0; _postTxn applies the opening balance below
@@ -105,12 +113,13 @@ class AccountingService {
   }
 
   Future<void> updateSupplier(String id,
-      {String? name, String? phone, String? address, String? code,
+      {String? name, String? phone, String? whatsapp, String? address, String? code,
        String? businessName, String? notes, bool? active}) async {
     await (db.update(db.suppliers)..where((t) => t.id.equals(id))).write(
       SuppliersCompanion(
         name: name == null ? const Value.absent() : Value(name),
         phone: phone == null ? const Value.absent() : Value(phone),
+        whatsapp: whatsapp == null ? const Value.absent() : Value(whatsapp),
         address: address == null ? const Value.absent() : Value(address),
         code: code == null ? const Value.absent() : Value(code),
         businessName: businessName == null ? const Value.absent() : Value(businessName),
@@ -119,6 +128,52 @@ class AccountingService {
         updatedAt: Value(_now()),
       ),
     );
+  }
+
+  // ---------- customer reminders ("Tareekh Rakhein") ----------
+
+  /// Add a payment reminder for a customer. Returns the reminder id.
+  Future<int> addCustomerReminder({
+    required String customerId,
+    required DateTime remindAt,
+    String note = '',
+  }) async {
+    return db.into(db.customerReminders).insert(CustomerRemindersCompanion.insert(
+          customerId: customerId,
+          remindAt: remindAt.millisecondsSinceEpoch,
+          note: Value(note),
+          createdAt: _now(),
+        ));
+  }
+
+  /// Pending (not done) reminders, optionally for one customer, ordered by date.
+  Future<List<CustomerReminder>> pendingReminders({String? customerId}) async {
+    final q = db.select(db.customerReminders)
+      ..where((t) =>
+          t.done.equals(0) &
+          (customerId == null
+              ? const Constant(true)
+              : t.customerId.equals(customerId)))
+      ..orderBy([(t) => OrderingTerm.asc(t.remindAt)]);
+    return q.get();
+  }
+
+  /// Overdue reminders (remindAt < now, not done).
+  Future<List<CustomerReminder>> overdueReminders() async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return (db.select(db.customerReminders)
+          ..where((t) => t.done.equals(0) & t.remindAt.isSmallerThanValue(now))
+          ..orderBy([(t) => OrderingTerm.asc(t.remindAt)]))
+        .get();
+  }
+
+  Future<void> markReminderDone(int id) async {
+    await (db.update(db.customerReminders)..where((t) => t.id.equals(id)))
+        .write(const CustomerRemindersCompanion(done: Value(1)));
+  }
+
+  Future<void> deleteReminder(int id) async {
+    await (db.delete(db.customerReminders)..where((t) => t.id.equals(id))).go();
   }
 
   // ---------- udhaar & payments ----------
@@ -130,6 +185,7 @@ class AccountingService {
     String description = '',
     String reference = '',
     int? date,
+    List<String> imagePaths = const [],
   }) async {
     if (amount <= Money.zero) return const Err('Invalid amount');
     final customer = await _customer(customerId);
@@ -143,6 +199,7 @@ class AccountingService {
         reference: reference, date: date,
         apply: (b) => Accounting.applyCreditSale(b, amount),
         accountKind: 'customer', accountId: customerId,
+        imagePaths: imagePaths,
       );
     });
     return Ok(txnId);
@@ -158,6 +215,7 @@ class AccountingService {
     String notes = '',
     int? date,
     String? allocateInvoiceId,
+    List<String> imagePaths = const [],
   }) async {
     if (amount <= Money.zero) return const Err('Invalid amount');
     final customer = await _customer(customerId);
@@ -188,7 +246,7 @@ class AccountingService {
         partyKind: 'customer', partyId: customerId, method: method,
         reference: reference,
         description: 'Payment received — ${customer.name} ($paymentNo)',
-        date: ts,
+        date: ts, imagePaths: imagePaths,
       );
       await _ledger(txnId, 'customer', customerId, Money.zero, amount,
           newBal, ts, 'Payment received');
@@ -217,6 +275,7 @@ class AccountingService {
     String notes = '',
     int? date,
     String? allocateInvoiceId,
+    List<String> imagePaths = const [],
   }) async {
     if (amount <= Money.zero) return const Err('Invalid amount');
     final supplier = await _supplier(supplierId);
@@ -250,7 +309,7 @@ class AccountingService {
         partyKind: 'supplier', partyId: supplierId, method: method,
         reference: reference,
         description: 'Payment to supplier — ${supplier.name} ($paymentNo)',
-        date: ts,
+        date: ts, imagePaths: imagePaths,
       );
       await _ledger(txnId, 'supplier', supplierId, amount, Money.zero,
           newBal, ts, 'Supplier payment');
@@ -488,6 +547,7 @@ class AccountingService {
     String description = '',
     String reference = '',
     int? date,
+    List<String> imagePaths = const [],
   }) async {
     if (amount <= Money.zero) return const Err('Invalid amount');
     final account = await _account(accountId);
@@ -508,7 +568,7 @@ class AccountingService {
       final id = await _insertTxn(
         category: TxnCategory.expense, amount: amount,
         description: description.isEmpty ? 'Expense — $category' : description,
-        reference: reference, date: ts,
+        reference: reference, date: ts, imagePaths: imagePaths,
       );
       await _ledger(id, 'cash', accountId, Money.zero, amount,
           Money(account.balance - amount.minor), ts, 'Expense');
@@ -526,6 +586,7 @@ class AccountingService {
     String description = '',
     String reference = '',
     int? date,
+    List<String> imagePaths = const [],
   }) async {
     if (amount <= Money.zero) return const Err('Invalid amount');
     final account = await _account(accountId);
@@ -543,7 +604,7 @@ class AccountingService {
       final id = await _insertTxn(
         category: TxnCategory.otherIncome, amount: amount,
         description: description.isEmpty ? 'Income — $category' : description,
-        reference: reference, date: ts,
+        reference: reference, date: ts, imagePaths: imagePaths,
       );
       await _ledger(id, 'cash', accountId, amount, Money.zero,
           Money(account.balance + amount.minor), ts, 'Income');
@@ -821,12 +882,13 @@ class AccountingService {
     required Money Function(Money balance) apply,
     required String accountKind,
     required String accountId,
+    List<String> imagePaths = const [],
   }) async {
     final ts = date ?? _now();
     final txnId = await _insertTxn(
       category: category, amount: amount, partyKind: partyKind,
       partyId: partyId, method: method, reference: reference,
-      description: description, date: ts,
+      description: description, date: ts, imagePaths: imagePaths,
     );
     // read current balance
     final cur = await _balanceOf(accountKind, accountId);
@@ -846,6 +908,7 @@ class AccountingService {
     String reference = '',
     required String description,
     int? date,
+    List<String> imagePaths = const [],
   }) async {
     final id = _uid();
     final txnNo = await db.nextDocNo('txn');
@@ -855,6 +918,7 @@ class AccountingService {
       partyKind: Value(partyKind), partyId: Value(partyId),
       paymentMethod: Value(method), reference: Value(reference),
       description: Value(description), createdAt: _now(),
+      imagePaths: Value(jsonEncode(imagePaths)),
     ));
     return id;
   }

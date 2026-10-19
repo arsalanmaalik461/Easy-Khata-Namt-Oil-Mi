@@ -2,6 +2,8 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/auto_backup.dart';
+import '../../data/biometric_auth.dart';
 import '../../data/db.dart';
 import '../providers.dart';
 import '../widgets/ui.dart';
@@ -60,6 +62,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       title: const Text('اردو'),
                       onChanged: (v) =>
                           _save({'language': v!})),
+                  RadioListTile<String>(
+                      value: 'ur-Latn',
+                      groupValue: s.language,
+                      title: const Text('Roman Urdu'),
+                      onChanged: (v) =>
+                          _save({'language': v!})),
+                  RadioListTile<String>(
+                      value: 'sd',
+                      groupValue: s.language,
+                      title: const Text('سنڌي'),
+                      onChanged: (v) =>
+                          _save({'language': v!})),
                 ]),
               ),
               const SizedBox(height: 12),
@@ -108,10 +122,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             : null,
                         onTap: has ? null : _setPin,
                       ),
+                      const Divider(height: 1),
+                      _FingerprintRow(),
                     ]);
                   },
                 ),
               ),
+              const SizedBox(height: 12),
+              _GoogleDriveSection(ref: ref),
             ],
           );
         },
@@ -243,6 +261,259 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (mounted) {
       showSnack(context, L(context).pinRemoved);
       setState(() {});
+    }
+  }
+}
+
+/// Fingerprint / biometric unlock toggle (new scope #2).
+///
+/// Uses [BiometricAuthService] (Team B) for capability checks + storage;
+/// the toggle UI lives here (Team A).
+class _FingerprintRow extends ConsumerStatefulWidget {
+  @override
+  ConsumerState<_FingerprintRow> createState() =>
+      _FingerprintRowState();
+}
+
+class _FingerprintRowState
+    extends ConsumerState<_FingerprintRow> {
+  final _svc = BiometricAuthService();
+  bool? _canUse;
+  bool? _enabled;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final can = await _svc.canUseBiometrics;
+    final en = await _svc.isEnabled;
+    if (mounted) {
+      setState(() {
+        _canUse = can;
+        _enabled = en;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = L(context);
+    if (_canUse == null) {
+      return const ListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text('…'),
+      );
+    }
+    if (_canUse == false) {
+      return ListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(l.fingerprintLock),
+        subtitle: Text(l.fingerprintNotAvailable,
+            style: const TextStyle(fontSize: 12)),
+      );
+    }
+    return SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(l.fingerprintLock),
+      subtitle: Text(l.fingerprintHint,
+          style: const TextStyle(fontSize: 12)),
+      value: _enabled ?? false,
+      onChanged: (v) async {
+        if (v) {
+          // Verify the finger before enabling.
+          final res = await _svc.authenticate(
+              reason: l.fingerprintLock);
+          if (!mounted) return;
+          if (!res.isOk || !res.value) {
+            showSnack(
+                context, l.fingerprintFailed,
+                error: true);
+            return;
+          }
+        }
+        await _svc.setEnabled(v);
+        if (mounted) setState(() => _enabled = v);
+      },
+    );
+  }
+}
+
+/// Google account + Drive auto-backup section (Team B).
+class _GoogleDriveSection extends ConsumerStatefulWidget {
+  final WidgetRef ref;
+  const _GoogleDriveSection({required this.ref});
+
+  @override
+  ConsumerState<_GoogleDriveSection> createState() =>
+      _GoogleDriveSectionState();
+}
+
+class _GoogleDriveSectionState
+    extends ConsumerState<_GoogleDriveSection> {
+  bool _busy = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = L(context);
+    final driveSettings = ref.watch(driveSettingsProvider);
+    return SectionCard(
+      title: l.googleBackup,
+      child: Column(
+        children: [
+          driveSettings.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.all(8),
+              child: CircularProgressIndicator(),
+            ),
+            error: (_, __) => Text(l.errorGeneric),
+            data: (s) {
+              final email = s?.googleAccountEmail ?? '';
+              final linked = email.isNotEmpty;
+              final autoOn = (s?.autoBackupEnabled ?? 0) == 1;
+              return Column(
+                children: [
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.cloud_outlined),
+                    title: Text(linked
+                        ? l.googleConnectedAs(email)
+                        : l.connectGoogle),
+                    subtitle: linked ? null : Text(l.googleBackupHint),
+                    trailing: _busy
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2))
+                        : TextButton(
+                            onPressed: () => linked
+                                ? _disconnect()
+                                : _connect(),
+                            child: Text(linked
+                                ? l.disconnectGoogle
+                                : l.connectGoogle),
+                          ),
+                  ),
+                  if (linked) ...[
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(l.autoBackup24h),
+                      subtitle: Text(l.autoBackup24hHint),
+                      value: autoOn,
+                      onChanged: _busy ? null : _toggleAuto,
+                    ),
+                    FutureBuilder<String>(
+                      future: ref
+                          .read(driveBackupProvider)
+                          .lastBackupLabel(),
+                      builder: (c, snap) {
+                        final label = snap.data ?? '';
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                          title: Text(l.lastAutoBackup),
+                          trailing: Text(
+                              label.isEmpty ? l.never : label),
+                        );
+                      },
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FilledButton.tonal(
+                        onPressed: _busy ? null : _backupNow,
+                        child: Text(l.backupNowDrive),
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _connect() async {
+    setState(() => _busy = true);
+    try {
+      final res =
+          await ref.read(googleAuthProvider).signIn();
+      if (!mounted) return;
+      if (res.isOk) {
+        showSnack(context, L(context).googleConnected);
+      } else {
+        showSnack(context, res.error, error: true);
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+      ref.invalidate(driveSettingsProvider);
+    }
+  }
+
+  Future<void> _disconnect() async {
+    final l = L(context);
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: Text(l.disconnectGoogle),
+        content: Text(l.googleDisconnectConfirm),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(d, false),
+              child: Text(l.cancel)),
+          FilledButton(
+              onPressed: () => Navigator.pop(d, true),
+              child: Text(l.ok)),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    setState(() => _busy = true);
+    try {
+      await ref.read(googleAuthProvider).signOut();
+      await AutoBackup.setEnabled(false);
+      if (mounted) showSnack(context, l.googleDisconnected);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+      ref.invalidate(driveSettingsProvider);
+    }
+  }
+
+  Future<void> _toggleAuto(bool v) async {
+    setState(() => _busy = true);
+    try {
+      await ref.read(driveBackupProvider).setAutoBackupEnabled(v);
+      await AutoBackup.setEnabled(v);
+      ref.invalidate(driveSettingsProvider);
+      if (mounted && v) {
+        // Try an immediate backup so the user sees it working.
+        showSnack(context, L(context).autoBackupEnabled);
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _backupNow() async {
+    setState(() => _busy = true);
+    try {
+      final res =
+          await ref.read(driveBackupProvider).uploadBackup();
+      if (!mounted) return;
+      final l = L(context);
+      if (res.isOk) {
+        showSnack(context, l.backupUploaded);
+      } else {
+        showSnack(context,
+            l.backupUploadFailed(res.error), error: true);
+      }
+      ref.invalidate(driveSettingsProvider);
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 }

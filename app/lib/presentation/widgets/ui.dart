@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../app/theme.dart';
 
-AppLocalizations L(BuildContext c) => AppLocalizations.of(c)!;
+AppLocalizations L(BuildContext c) => AppLocalizations.of(c);
 
 /// Format minor units as "Rs 1,234.50" respecting locale.
 String fmtMoney(BuildContext c, int minor, {bool compact = false}) {

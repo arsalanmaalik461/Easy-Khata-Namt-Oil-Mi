@@ -5,6 +5,7 @@ import 'package:pdf/widgets.dart' as pw;
 
 import '../core/money.dart';
 import 'db.dart';
+import 'reports.dart';
 
 /// Generates branded PDF documents. English layout in v1; Urdu layout
 /// follows the same structure (textDirection set per locale).
@@ -219,6 +220,83 @@ class DocumentService {
               'Outstanding: ${_money(cust.balance)}',
               style: pw.TextStyle(
                   fontWeight: pw.FontWeight.bold)),
+        ],
+      ),
+    ));
+    return doc.save();
+  }
+
+  /// Whole customer-list PDF (for the Khata tab PDF export button).
+  /// Lists all active customers with phone and current balance.
+  Future<List<int>> customerListPdf() async {
+    final customers = await (db.select(db.customers)
+          ..where((t) => t.active.equals(true))
+          ..orderBy([(t) => OrderingTerm.asc(t.name)]))
+        .get();
+    final business = await _businessName();
+    final doc = pw.Document();
+    doc.addPage(pw.Page(
+      pageFormat: PdfPageFormat.a4,
+      build: (_) => pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          _header(business, 'Customer List', '${customers.length} customers',
+              _date(DateTime.now().millisecondsSinceEpoch)),
+          pw.TableHelper.fromTextArray(
+            headers: ['Name', 'Phone', 'Balance'],
+            data: customers
+                .map((c) => [
+                      c.name,
+                      c.phone,
+                      _money(c.balance),
+                    ])
+                .toList(),
+          ),
+        ],
+      ),
+    ));
+    return doc.save();
+  }
+
+  /// Date-range summary PDF: profit/loss totals + transaction list for
+  /// [from]..[to] (ms since epoch). Used by the custom-range export.
+  Future<List<int>> dateRangeSummaryPdf(int from, int to) async {
+    final reports = ReportService(db);
+    final pl = await reports.profitLoss(from, to);
+    final txns = await (db.select(db.transactions)
+          ..where((t) =>
+              t.date.isBetweenValues(from, to) &
+              t.status.equals('posted'))
+          ..orderBy([(t) => OrderingTerm.asc(t.date)]))
+        .get();
+    final business = await _businessName();
+    final doc = pw.Document();
+    doc.addPage(pw.Page(
+      pageFormat: PdfPageFormat.a4,
+      build: (_) => pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          _header(business, 'Summary', '${_date(from)} — ${_date(to)}',
+              _date(DateTime.now().millisecondsSinceEpoch)),
+          _totals([
+            ('Revenue', pl.revenue.minor),
+            ('Expenses', pl.operatingExpenses.minor),
+          ], pl.profit.minor),
+          pw.SizedBox(height: 16),
+          pw.Text('Transactions (${txns.length})',
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 8),
+          pw.TableHelper.fromTextArray(
+            headers: ['Date', 'No.', 'Description', 'Amount'],
+            data: txns
+                .map((t) => [
+                      _date(t.date),
+                      t.txnNumber,
+                      t.description.isEmpty ? t.category : t.description,
+                      _money(t.amountMinor),
+                    ])
+                .toList(),
+          ),
         ],
       ),
     ));

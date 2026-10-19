@@ -1,8 +1,13 @@
+import 'dart:io';
+
 import 'package:drift/drift.dart' hide Column;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
+import '../../data/documents.dart';
 import '../providers.dart';
 import '../widgets/ui.dart';
 
@@ -71,6 +76,11 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 12),
+          _DateRangeExport(
+            busy: _busy,
+            setBusy: (v) => setState(() => _busy = v),
           ),
           if (_busy)
             const Padding(
@@ -142,9 +152,150 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
       }
     } catch (e) {
       if (mounted) {
-        showSnack(context, l.restoreFailed(e), error: true);
+        showSnack(context, l.restoreFailed(e.toString()), error: true);
         setState(() => _busy = false);
       }
     }
+  }
+}
+
+/// Custom date-range export: pick from/to dates, generate a summary PDF,
+/// then share it (WhatsApp etc.) or upload it to Google Drive.
+class _DateRangeExport extends ConsumerStatefulWidget {
+  final bool busy;
+  final void Function(bool) setBusy;
+  const _DateRangeExport({required this.busy, required this.setBusy});
+
+  @override
+  ConsumerState<_DateRangeExport> createState() => _DateRangeExportState();
+}
+
+class _DateRangeExportState extends ConsumerState<_DateRangeExport> {
+  DateTime _from = DateTime(DateTime.now().year, DateTime.now().month, 1);
+  DateTime _to = DateTime.now();
+
+  String _fmt(DateTime d) => '${d.day}/${d.month}/${d.year}';
+
+  Future<void> _pick(bool isFrom) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: isFrom ? _from : _to,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
+    );
+    if (picked != null) {
+      setState(() {
+        if (isFrom) {
+          _from = picked;
+          if (_to.isBefore(_from)) _to = _from;
+        } else {
+          _to = picked;
+          if (_from.isAfter(_to)) _from = _to;
+        }
+      });
+    }
+  }
+
+  Future<String?> _generatePdf() async {
+    final db = ref.read(databaseProvider);
+    final bytes = await DocumentService(db).dateRangeSummaryPdf(
+      DateTime(_from.year, _from.month, _from.day).millisecondsSinceEpoch,
+      DateTime(_to.year, _to.month, _to.day, 23, 59, 59)
+          .millisecondsSinceEpoch,
+    );
+    final dir = await getTemporaryDirectory();
+    final stamp =
+        '${_from.year}${_from.month.toString().padLeft(2, '0')}${_from.day.toString().padLeft(2, '0')}'
+        '-${_to.year}${_to.month.toString().padLeft(2, '0')}${_to.day.toString().padLeft(2, '0')}';
+    final file = File('${dir.path}/namt-summary-$stamp.pdf');
+    await file.writeAsBytes(bytes, flush: true);
+    return file.path;
+  }
+
+  Future<void> _share() async {
+    final l = L(context);
+    widget.setBusy(true);
+    try {
+      final path = await _generatePdf();
+      if (path == null || !mounted) return;
+      await Share.shareXFiles([XFile(path)],
+          text: '${l.exportCustomRange}: ${_fmt(_from)} — ${_fmt(_to)}');
+    } catch (e) {
+      if (mounted) showSnack(context, l.errorGeneric, error: true);
+    } finally {
+      widget.setBusy(false);
+    }
+  }
+
+  Future<void> _uploadDrive() async {
+    final l = L(context);
+    widget.setBusy(true);
+    try {
+      final path = await _generatePdf();
+      if (path == null || !mounted) return;
+      final name = 'namt-summary-${DateTime.now().millisecondsSinceEpoch}.pdf';
+      final res =
+          await ref.read(driveBackupProvider).uploadFile(path, name);
+      if (!mounted) return;
+      showSnack(
+          context, res.isOk ? l.backupUploaded : res.error,
+          error: !res.isOk);
+    } catch (e) {
+      if (mounted) showSnack(context, l.errorGeneric, error: true);
+    } finally {
+      widget.setBusy(false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = L(context);
+    return SectionCard(
+      title: l.exportCustomRange,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: widget.busy ? null : () => _pick(true),
+                  icon: const Icon(Icons.calendar_today_outlined, size: 18),
+                  label: Text('${l.from}: ${_fmt(_from)}'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: widget.busy ? null : () => _pick(false),
+                  icon: const Icon(Icons.calendar_today_outlined, size: 18),
+                  label: Text('${l.to}: ${_fmt(_to)}'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: widget.busy ? null : _share,
+                  icon: const Icon(Icons.share_outlined),
+                  label: Text(l.share),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: widget.busy ? null : _uploadDrive,
+                  icon: const Icon(Icons.cloud_upload_outlined),
+                  label: Text(l.driveBackup),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

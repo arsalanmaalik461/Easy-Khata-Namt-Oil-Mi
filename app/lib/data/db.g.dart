@@ -2159,6 +2159,18 @@ class $CustomersTable extends Customers
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _whatsappMeta = const VerificationMeta(
+    'whatsapp',
+  );
+  @override
+  late final GeneratedColumn<String> whatsapp = GeneratedColumn<String>(
+    'whatsapp',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _addressMeta = const VerificationMeta(
     'address',
   );
@@ -2240,6 +2252,21 @@ class $CustomersTable extends Customers
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _isFavoriteMeta = const VerificationMeta(
+    'isFavorite',
+  );
+  @override
+  late final GeneratedColumn<bool> isFavorite = GeneratedColumn<bool>(
+    'is_favorite',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_favorite" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -2267,6 +2294,7 @@ class $CustomersTable extends Customers
     id,
     name,
     phone,
+    whatsapp,
     address,
     code,
     businessName,
@@ -2274,6 +2302,7 @@ class $CustomersTable extends Customers
     openingBalance,
     balance,
     active,
+    isFavorite,
     createdAt,
     updatedAt,
   ];
@@ -2306,6 +2335,12 @@ class $CustomersTable extends Customers
       context.handle(
         _phoneMeta,
         phone.isAcceptableOrUnknown(data['phone']!, _phoneMeta),
+      );
+    }
+    if (data.containsKey('whatsapp')) {
+      context.handle(
+        _whatsappMeta,
+        whatsapp.isAcceptableOrUnknown(data['whatsapp']!, _whatsappMeta),
       );
     }
     if (data.containsKey('address')) {
@@ -2356,6 +2391,12 @@ class $CustomersTable extends Customers
         active.isAcceptableOrUnknown(data['active']!, _activeMeta),
       );
     }
+    if (data.containsKey('is_favorite')) {
+      context.handle(
+        _isFavoriteMeta,
+        isFavorite.isAcceptableOrUnknown(data['is_favorite']!, _isFavoriteMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -2393,6 +2434,10 @@ class $CustomersTable extends Customers
         DriftSqlType.string,
         data['${effectivePrefix}phone'],
       )!,
+      whatsapp: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}whatsapp'],
+      )!,
       address: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}address'],
@@ -2421,6 +2466,10 @@ class $CustomersTable extends Customers
         DriftSqlType.bool,
         data['${effectivePrefix}active'],
       )!,
+      isFavorite: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_favorite'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}created_at'],
@@ -2442,6 +2491,9 @@ class Customer extends DataClass implements Insertable<Customer> {
   final String id;
   final String name;
   final String phone;
+
+  /// WhatsApp number; empty means "same as phone".
+  final String whatsapp;
   final String address;
   final String code;
   final String businessName;
@@ -2451,12 +2503,16 @@ class Customer extends DataClass implements Insertable<Customer> {
   final int openingBalance;
   final int balance;
   final bool active;
+
+  /// 0/1 favorite (heart) toggle
+  final bool isFavorite;
   final int createdAt;
   final int updatedAt;
   const Customer({
     required this.id,
     required this.name,
     required this.phone,
+    required this.whatsapp,
     required this.address,
     required this.code,
     required this.businessName,
@@ -2464,6 +2520,7 @@ class Customer extends DataClass implements Insertable<Customer> {
     required this.openingBalance,
     required this.balance,
     required this.active,
+    required this.isFavorite,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -2473,6 +2530,7 @@ class Customer extends DataClass implements Insertable<Customer> {
     map['id'] = Variable<String>(id);
     map['name'] = Variable<String>(name);
     map['phone'] = Variable<String>(phone);
+    map['whatsapp'] = Variable<String>(whatsapp);
     map['address'] = Variable<String>(address);
     map['code'] = Variable<String>(code);
     map['business_name'] = Variable<String>(businessName);
@@ -2480,6 +2538,7 @@ class Customer extends DataClass implements Insertable<Customer> {
     map['opening_balance'] = Variable<int>(openingBalance);
     map['balance'] = Variable<int>(balance);
     map['active'] = Variable<bool>(active);
+    map['is_favorite'] = Variable<bool>(isFavorite);
     map['created_at'] = Variable<int>(createdAt);
     map['updated_at'] = Variable<int>(updatedAt);
     return map;
@@ -2490,6 +2549,7 @@ class Customer extends DataClass implements Insertable<Customer> {
       id: Value(id),
       name: Value(name),
       phone: Value(phone),
+      whatsapp: Value(whatsapp),
       address: Value(address),
       code: Value(code),
       businessName: Value(businessName),
@@ -2497,6 +2557,7 @@ class Customer extends DataClass implements Insertable<Customer> {
       openingBalance: Value(openingBalance),
       balance: Value(balance),
       active: Value(active),
+      isFavorite: Value(isFavorite),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -2511,6 +2572,7 @@ class Customer extends DataClass implements Insertable<Customer> {
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       phone: serializer.fromJson<String>(json['phone']),
+      whatsapp: serializer.fromJson<String>(json['whatsapp']),
       address: serializer.fromJson<String>(json['address']),
       code: serializer.fromJson<String>(json['code']),
       businessName: serializer.fromJson<String>(json['businessName']),
@@ -2518,6 +2580,7 @@ class Customer extends DataClass implements Insertable<Customer> {
       openingBalance: serializer.fromJson<int>(json['openingBalance']),
       balance: serializer.fromJson<int>(json['balance']),
       active: serializer.fromJson<bool>(json['active']),
+      isFavorite: serializer.fromJson<bool>(json['isFavorite']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
       updatedAt: serializer.fromJson<int>(json['updatedAt']),
     );
@@ -2529,6 +2592,7 @@ class Customer extends DataClass implements Insertable<Customer> {
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
       'phone': serializer.toJson<String>(phone),
+      'whatsapp': serializer.toJson<String>(whatsapp),
       'address': serializer.toJson<String>(address),
       'code': serializer.toJson<String>(code),
       'businessName': serializer.toJson<String>(businessName),
@@ -2536,6 +2600,7 @@ class Customer extends DataClass implements Insertable<Customer> {
       'openingBalance': serializer.toJson<int>(openingBalance),
       'balance': serializer.toJson<int>(balance),
       'active': serializer.toJson<bool>(active),
+      'isFavorite': serializer.toJson<bool>(isFavorite),
       'createdAt': serializer.toJson<int>(createdAt),
       'updatedAt': serializer.toJson<int>(updatedAt),
     };
@@ -2545,6 +2610,7 @@ class Customer extends DataClass implements Insertable<Customer> {
     String? id,
     String? name,
     String? phone,
+    String? whatsapp,
     String? address,
     String? code,
     String? businessName,
@@ -2552,12 +2618,14 @@ class Customer extends DataClass implements Insertable<Customer> {
     int? openingBalance,
     int? balance,
     bool? active,
+    bool? isFavorite,
     int? createdAt,
     int? updatedAt,
   }) => Customer(
     id: id ?? this.id,
     name: name ?? this.name,
     phone: phone ?? this.phone,
+    whatsapp: whatsapp ?? this.whatsapp,
     address: address ?? this.address,
     code: code ?? this.code,
     businessName: businessName ?? this.businessName,
@@ -2565,6 +2633,7 @@ class Customer extends DataClass implements Insertable<Customer> {
     openingBalance: openingBalance ?? this.openingBalance,
     balance: balance ?? this.balance,
     active: active ?? this.active,
+    isFavorite: isFavorite ?? this.isFavorite,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -2573,6 +2642,7 @@ class Customer extends DataClass implements Insertable<Customer> {
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
       phone: data.phone.present ? data.phone.value : this.phone,
+      whatsapp: data.whatsapp.present ? data.whatsapp.value : this.whatsapp,
       address: data.address.present ? data.address.value : this.address,
       code: data.code.present ? data.code.value : this.code,
       businessName: data.businessName.present
@@ -2584,6 +2654,9 @@ class Customer extends DataClass implements Insertable<Customer> {
           : this.openingBalance,
       balance: data.balance.present ? data.balance.value : this.balance,
       active: data.active.present ? data.active.value : this.active,
+      isFavorite: data.isFavorite.present
+          ? data.isFavorite.value
+          : this.isFavorite,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -2595,6 +2668,7 @@ class Customer extends DataClass implements Insertable<Customer> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('phone: $phone, ')
+          ..write('whatsapp: $whatsapp, ')
           ..write('address: $address, ')
           ..write('code: $code, ')
           ..write('businessName: $businessName, ')
@@ -2602,6 +2676,7 @@ class Customer extends DataClass implements Insertable<Customer> {
           ..write('openingBalance: $openingBalance, ')
           ..write('balance: $balance, ')
           ..write('active: $active, ')
+          ..write('isFavorite: $isFavorite, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -2613,6 +2688,7 @@ class Customer extends DataClass implements Insertable<Customer> {
     id,
     name,
     phone,
+    whatsapp,
     address,
     code,
     businessName,
@@ -2620,6 +2696,7 @@ class Customer extends DataClass implements Insertable<Customer> {
     openingBalance,
     balance,
     active,
+    isFavorite,
     createdAt,
     updatedAt,
   );
@@ -2630,6 +2707,7 @@ class Customer extends DataClass implements Insertable<Customer> {
           other.id == this.id &&
           other.name == this.name &&
           other.phone == this.phone &&
+          other.whatsapp == this.whatsapp &&
           other.address == this.address &&
           other.code == this.code &&
           other.businessName == this.businessName &&
@@ -2637,6 +2715,7 @@ class Customer extends DataClass implements Insertable<Customer> {
           other.openingBalance == this.openingBalance &&
           other.balance == this.balance &&
           other.active == this.active &&
+          other.isFavorite == this.isFavorite &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -2645,6 +2724,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
   final Value<String> id;
   final Value<String> name;
   final Value<String> phone;
+  final Value<String> whatsapp;
   final Value<String> address;
   final Value<String> code;
   final Value<String> businessName;
@@ -2652,6 +2732,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
   final Value<int> openingBalance;
   final Value<int> balance;
   final Value<bool> active;
+  final Value<bool> isFavorite;
   final Value<int> createdAt;
   final Value<int> updatedAt;
   final Value<int> rowid;
@@ -2659,6 +2740,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.phone = const Value.absent(),
+    this.whatsapp = const Value.absent(),
     this.address = const Value.absent(),
     this.code = const Value.absent(),
     this.businessName = const Value.absent(),
@@ -2666,6 +2748,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     this.openingBalance = const Value.absent(),
     this.balance = const Value.absent(),
     this.active = const Value.absent(),
+    this.isFavorite = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -2674,6 +2757,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     required String id,
     required String name,
     this.phone = const Value.absent(),
+    this.whatsapp = const Value.absent(),
     this.address = const Value.absent(),
     this.code = const Value.absent(),
     this.businessName = const Value.absent(),
@@ -2681,6 +2765,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     this.openingBalance = const Value.absent(),
     this.balance = const Value.absent(),
     this.active = const Value.absent(),
+    this.isFavorite = const Value.absent(),
     required int createdAt,
     required int updatedAt,
     this.rowid = const Value.absent(),
@@ -2692,6 +2777,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     Expression<String>? id,
     Expression<String>? name,
     Expression<String>? phone,
+    Expression<String>? whatsapp,
     Expression<String>? address,
     Expression<String>? code,
     Expression<String>? businessName,
@@ -2699,6 +2785,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     Expression<int>? openingBalance,
     Expression<int>? balance,
     Expression<bool>? active,
+    Expression<bool>? isFavorite,
     Expression<int>? createdAt,
     Expression<int>? updatedAt,
     Expression<int>? rowid,
@@ -2707,6 +2794,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (phone != null) 'phone': phone,
+      if (whatsapp != null) 'whatsapp': whatsapp,
       if (address != null) 'address': address,
       if (code != null) 'code': code,
       if (businessName != null) 'business_name': businessName,
@@ -2714,6 +2802,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
       if (openingBalance != null) 'opening_balance': openingBalance,
       if (balance != null) 'balance': balance,
       if (active != null) 'active': active,
+      if (isFavorite != null) 'is_favorite': isFavorite,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -2724,6 +2813,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     Value<String>? id,
     Value<String>? name,
     Value<String>? phone,
+    Value<String>? whatsapp,
     Value<String>? address,
     Value<String>? code,
     Value<String>? businessName,
@@ -2731,6 +2821,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     Value<int>? openingBalance,
     Value<int>? balance,
     Value<bool>? active,
+    Value<bool>? isFavorite,
     Value<int>? createdAt,
     Value<int>? updatedAt,
     Value<int>? rowid,
@@ -2739,6 +2830,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
       id: id ?? this.id,
       name: name ?? this.name,
       phone: phone ?? this.phone,
+      whatsapp: whatsapp ?? this.whatsapp,
       address: address ?? this.address,
       code: code ?? this.code,
       businessName: businessName ?? this.businessName,
@@ -2746,6 +2838,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
       openingBalance: openingBalance ?? this.openingBalance,
       balance: balance ?? this.balance,
       active: active ?? this.active,
+      isFavorite: isFavorite ?? this.isFavorite,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -2763,6 +2856,9 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     }
     if (phone.present) {
       map['phone'] = Variable<String>(phone.value);
+    }
+    if (whatsapp.present) {
+      map['whatsapp'] = Variable<String>(whatsapp.value);
     }
     if (address.present) {
       map['address'] = Variable<String>(address.value);
@@ -2785,6 +2881,9 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     if (active.present) {
       map['active'] = Variable<bool>(active.value);
     }
+    if (isFavorite.present) {
+      map['is_favorite'] = Variable<bool>(isFavorite.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<int>(createdAt.value);
     }
@@ -2803,6 +2902,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('phone: $phone, ')
+          ..write('whatsapp: $whatsapp, ')
           ..write('address: $address, ')
           ..write('code: $code, ')
           ..write('businessName: $businessName, ')
@@ -2810,6 +2910,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
           ..write('openingBalance: $openingBalance, ')
           ..write('balance: $balance, ')
           ..write('active: $active, ')
+          ..write('isFavorite: $isFavorite, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -2846,6 +2947,18 @@ class $SuppliersTable extends Suppliers
   @override
   late final GeneratedColumn<String> phone = GeneratedColumn<String>(
     'phone',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _whatsappMeta = const VerificationMeta(
+    'whatsapp',
+  );
+  @override
+  late final GeneratedColumn<String> whatsapp = GeneratedColumn<String>(
+    'whatsapp',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -2960,6 +3073,7 @@ class $SuppliersTable extends Suppliers
     id,
     name,
     phone,
+    whatsapp,
     address,
     code,
     businessName,
@@ -2999,6 +3113,12 @@ class $SuppliersTable extends Suppliers
       context.handle(
         _phoneMeta,
         phone.isAcceptableOrUnknown(data['phone']!, _phoneMeta),
+      );
+    }
+    if (data.containsKey('whatsapp')) {
+      context.handle(
+        _whatsappMeta,
+        whatsapp.isAcceptableOrUnknown(data['whatsapp']!, _whatsappMeta),
       );
     }
     if (data.containsKey('address')) {
@@ -3086,6 +3206,10 @@ class $SuppliersTable extends Suppliers
         DriftSqlType.string,
         data['${effectivePrefix}phone'],
       )!,
+      whatsapp: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}whatsapp'],
+      )!,
       address: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}address'],
@@ -3135,6 +3259,9 @@ class Supplier extends DataClass implements Insertable<Supplier> {
   final String id;
   final String name;
   final String phone;
+
+  /// WhatsApp number; empty means "same as phone".
+  final String whatsapp;
   final String address;
   final String code;
   final String businessName;
@@ -3150,6 +3277,7 @@ class Supplier extends DataClass implements Insertable<Supplier> {
     required this.id,
     required this.name,
     required this.phone,
+    required this.whatsapp,
     required this.address,
     required this.code,
     required this.businessName,
@@ -3166,6 +3294,7 @@ class Supplier extends DataClass implements Insertable<Supplier> {
     map['id'] = Variable<String>(id);
     map['name'] = Variable<String>(name);
     map['phone'] = Variable<String>(phone);
+    map['whatsapp'] = Variable<String>(whatsapp);
     map['address'] = Variable<String>(address);
     map['code'] = Variable<String>(code);
     map['business_name'] = Variable<String>(businessName);
@@ -3183,6 +3312,7 @@ class Supplier extends DataClass implements Insertable<Supplier> {
       id: Value(id),
       name: Value(name),
       phone: Value(phone),
+      whatsapp: Value(whatsapp),
       address: Value(address),
       code: Value(code),
       businessName: Value(businessName),
@@ -3204,6 +3334,7 @@ class Supplier extends DataClass implements Insertable<Supplier> {
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       phone: serializer.fromJson<String>(json['phone']),
+      whatsapp: serializer.fromJson<String>(json['whatsapp']),
       address: serializer.fromJson<String>(json['address']),
       code: serializer.fromJson<String>(json['code']),
       businessName: serializer.fromJson<String>(json['businessName']),
@@ -3222,6 +3353,7 @@ class Supplier extends DataClass implements Insertable<Supplier> {
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
       'phone': serializer.toJson<String>(phone),
+      'whatsapp': serializer.toJson<String>(whatsapp),
       'address': serializer.toJson<String>(address),
       'code': serializer.toJson<String>(code),
       'businessName': serializer.toJson<String>(businessName),
@@ -3238,6 +3370,7 @@ class Supplier extends DataClass implements Insertable<Supplier> {
     String? id,
     String? name,
     String? phone,
+    String? whatsapp,
     String? address,
     String? code,
     String? businessName,
@@ -3251,6 +3384,7 @@ class Supplier extends DataClass implements Insertable<Supplier> {
     id: id ?? this.id,
     name: name ?? this.name,
     phone: phone ?? this.phone,
+    whatsapp: whatsapp ?? this.whatsapp,
     address: address ?? this.address,
     code: code ?? this.code,
     businessName: businessName ?? this.businessName,
@@ -3266,6 +3400,7 @@ class Supplier extends DataClass implements Insertable<Supplier> {
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
       phone: data.phone.present ? data.phone.value : this.phone,
+      whatsapp: data.whatsapp.present ? data.whatsapp.value : this.whatsapp,
       address: data.address.present ? data.address.value : this.address,
       code: data.code.present ? data.code.value : this.code,
       businessName: data.businessName.present
@@ -3288,6 +3423,7 @@ class Supplier extends DataClass implements Insertable<Supplier> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('phone: $phone, ')
+          ..write('whatsapp: $whatsapp, ')
           ..write('address: $address, ')
           ..write('code: $code, ')
           ..write('businessName: $businessName, ')
@@ -3306,6 +3442,7 @@ class Supplier extends DataClass implements Insertable<Supplier> {
     id,
     name,
     phone,
+    whatsapp,
     address,
     code,
     businessName,
@@ -3323,6 +3460,7 @@ class Supplier extends DataClass implements Insertable<Supplier> {
           other.id == this.id &&
           other.name == this.name &&
           other.phone == this.phone &&
+          other.whatsapp == this.whatsapp &&
           other.address == this.address &&
           other.code == this.code &&
           other.businessName == this.businessName &&
@@ -3338,6 +3476,7 @@ class SuppliersCompanion extends UpdateCompanion<Supplier> {
   final Value<String> id;
   final Value<String> name;
   final Value<String> phone;
+  final Value<String> whatsapp;
   final Value<String> address;
   final Value<String> code;
   final Value<String> businessName;
@@ -3352,6 +3491,7 @@ class SuppliersCompanion extends UpdateCompanion<Supplier> {
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.phone = const Value.absent(),
+    this.whatsapp = const Value.absent(),
     this.address = const Value.absent(),
     this.code = const Value.absent(),
     this.businessName = const Value.absent(),
@@ -3367,6 +3507,7 @@ class SuppliersCompanion extends UpdateCompanion<Supplier> {
     required String id,
     required String name,
     this.phone = const Value.absent(),
+    this.whatsapp = const Value.absent(),
     this.address = const Value.absent(),
     this.code = const Value.absent(),
     this.businessName = const Value.absent(),
@@ -3385,6 +3526,7 @@ class SuppliersCompanion extends UpdateCompanion<Supplier> {
     Expression<String>? id,
     Expression<String>? name,
     Expression<String>? phone,
+    Expression<String>? whatsapp,
     Expression<String>? address,
     Expression<String>? code,
     Expression<String>? businessName,
@@ -3400,6 +3542,7 @@ class SuppliersCompanion extends UpdateCompanion<Supplier> {
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (phone != null) 'phone': phone,
+      if (whatsapp != null) 'whatsapp': whatsapp,
       if (address != null) 'address': address,
       if (code != null) 'code': code,
       if (businessName != null) 'business_name': businessName,
@@ -3417,6 +3560,7 @@ class SuppliersCompanion extends UpdateCompanion<Supplier> {
     Value<String>? id,
     Value<String>? name,
     Value<String>? phone,
+    Value<String>? whatsapp,
     Value<String>? address,
     Value<String>? code,
     Value<String>? businessName,
@@ -3432,6 +3576,7 @@ class SuppliersCompanion extends UpdateCompanion<Supplier> {
       id: id ?? this.id,
       name: name ?? this.name,
       phone: phone ?? this.phone,
+      whatsapp: whatsapp ?? this.whatsapp,
       address: address ?? this.address,
       code: code ?? this.code,
       businessName: businessName ?? this.businessName,
@@ -3456,6 +3601,9 @@ class SuppliersCompanion extends UpdateCompanion<Supplier> {
     }
     if (phone.present) {
       map['phone'] = Variable<String>(phone.value);
+    }
+    if (whatsapp.present) {
+      map['whatsapp'] = Variable<String>(whatsapp.value);
     }
     if (address.present) {
       map['address'] = Variable<String>(address.value);
@@ -3496,6 +3644,7 @@ class SuppliersCompanion extends UpdateCompanion<Supplier> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('phone: $phone, ')
+          ..write('whatsapp: $whatsapp, ')
           ..write('address: $address, ')
           ..write('code: $code, ')
           ..write('businessName: $businessName, ')
@@ -4103,6 +4252,18 @@ class $TransactionsTable extends Transactions
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _imagePathsMeta = const VerificationMeta(
+    'imagePaths',
+  );
+  @override
+  late final GeneratedColumn<String> imagePaths = GeneratedColumn<String>(
+    'image_paths',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -4128,6 +4289,7 @@ class $TransactionsTable extends Transactions
     description,
     status,
     reversedBy,
+    imagePaths,
     createdAt,
   ];
   @override
@@ -4230,6 +4392,12 @@ class $TransactionsTable extends Transactions
         reversedBy.isAcceptableOrUnknown(data['reversed_by']!, _reversedByMeta),
       );
     }
+    if (data.containsKey('image_paths')) {
+      context.handle(
+        _imagePathsMeta,
+        imagePaths.isAcceptableOrUnknown(data['image_paths']!, _imagePathsMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -4295,6 +4463,10 @@ class $TransactionsTable extends Transactions
         DriftSqlType.string,
         data['${effectivePrefix}reversed_by'],
       ),
+      imagePaths: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}image_paths'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}created_at'],
@@ -4325,6 +4497,9 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   /// posted | reversed
   final String status;
   final String? reversedBy;
+
+  /// JSON list of local bill-image file paths, e.g. '["/path/a.jpg"]'
+  final String imagePaths;
   final int createdAt;
   const Transaction({
     required this.id,
@@ -4339,6 +4514,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     required this.description,
     required this.status,
     this.reversedBy,
+    required this.imagePaths,
     required this.createdAt,
   });
   @override
@@ -4362,6 +4538,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     if (!nullToAbsent || reversedBy != null) {
       map['reversed_by'] = Variable<String>(reversedBy);
     }
+    map['image_paths'] = Variable<String>(imagePaths);
     map['created_at'] = Variable<int>(createdAt);
     return map;
   }
@@ -4386,6 +4563,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       reversedBy: reversedBy == null && nullToAbsent
           ? const Value.absent()
           : Value(reversedBy),
+      imagePaths: Value(imagePaths),
       createdAt: Value(createdAt),
     );
   }
@@ -4408,6 +4586,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       description: serializer.fromJson<String>(json['description']),
       status: serializer.fromJson<String>(json['status']),
       reversedBy: serializer.fromJson<String?>(json['reversedBy']),
+      imagePaths: serializer.fromJson<String>(json['imagePaths']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
     );
   }
@@ -4427,6 +4606,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       'description': serializer.toJson<String>(description),
       'status': serializer.toJson<String>(status),
       'reversedBy': serializer.toJson<String?>(reversedBy),
+      'imagePaths': serializer.toJson<String>(imagePaths),
       'createdAt': serializer.toJson<int>(createdAt),
     };
   }
@@ -4444,6 +4624,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     String? description,
     String? status,
     Value<String?> reversedBy = const Value.absent(),
+    String? imagePaths,
     int? createdAt,
   }) => Transaction(
     id: id ?? this.id,
@@ -4458,6 +4639,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     description: description ?? this.description,
     status: status ?? this.status,
     reversedBy: reversedBy.present ? reversedBy.value : this.reversedBy,
+    imagePaths: imagePaths ?? this.imagePaths,
     createdAt: createdAt ?? this.createdAt,
   );
   Transaction copyWithCompanion(TransactionsCompanion data) {
@@ -4482,6 +4664,9 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       reversedBy: data.reversedBy.present
           ? data.reversedBy.value
           : this.reversedBy,
+      imagePaths: data.imagePaths.present
+          ? data.imagePaths.value
+          : this.imagePaths,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -4501,6 +4686,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           ..write('description: $description, ')
           ..write('status: $status, ')
           ..write('reversedBy: $reversedBy, ')
+          ..write('imagePaths: $imagePaths, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -4520,6 +4706,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     description,
     status,
     reversedBy,
+    imagePaths,
     createdAt,
   );
   @override
@@ -4538,6 +4725,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           other.description == this.description &&
           other.status == this.status &&
           other.reversedBy == this.reversedBy &&
+          other.imagePaths == this.imagePaths &&
           other.createdAt == this.createdAt);
 }
 
@@ -4554,6 +4742,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
   final Value<String> description;
   final Value<String> status;
   final Value<String?> reversedBy;
+  final Value<String> imagePaths;
   final Value<int> createdAt;
   final Value<int> rowid;
   const TransactionsCompanion({
@@ -4569,6 +4758,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     this.description = const Value.absent(),
     this.status = const Value.absent(),
     this.reversedBy = const Value.absent(),
+    this.imagePaths = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -4585,6 +4775,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     this.description = const Value.absent(),
     this.status = const Value.absent(),
     this.reversedBy = const Value.absent(),
+    this.imagePaths = const Value.absent(),
     required int createdAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -4606,6 +4797,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     Expression<String>? description,
     Expression<String>? status,
     Expression<String>? reversedBy,
+    Expression<String>? imagePaths,
     Expression<int>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -4622,6 +4814,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       if (description != null) 'description': description,
       if (status != null) 'status': status,
       if (reversedBy != null) 'reversed_by': reversedBy,
+      if (imagePaths != null) 'image_paths': imagePaths,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -4640,6 +4833,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     Value<String>? description,
     Value<String>? status,
     Value<String?>? reversedBy,
+    Value<String>? imagePaths,
     Value<int>? createdAt,
     Value<int>? rowid,
   }) {
@@ -4656,6 +4850,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       description: description ?? this.description,
       status: status ?? this.status,
       reversedBy: reversedBy ?? this.reversedBy,
+      imagePaths: imagePaths ?? this.imagePaths,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -4700,6 +4895,9 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     if (reversedBy.present) {
       map['reversed_by'] = Variable<String>(reversedBy.value);
     }
+    if (imagePaths.present) {
+      map['image_paths'] = Variable<String>(imagePaths.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<int>(createdAt.value);
     }
@@ -4724,6 +4922,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
           ..write('description: $description, ')
           ..write('status: $status, ')
           ..write('reversedBy: $reversedBy, ')
+          ..write('imagePaths: $imagePaths, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -14918,6 +15117,828 @@ class BackupMetaCompanion extends UpdateCompanion<BackupMetaData> {
   }
 }
 
+class $CustomerRemindersTable extends CustomerReminders
+    with TableInfo<$CustomerRemindersTable, CustomerReminder> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CustomerRemindersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _customerIdMeta = const VerificationMeta(
+    'customerId',
+  );
+  @override
+  late final GeneratedColumn<String> customerId = GeneratedColumn<String>(
+    'customer_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _remindAtMeta = const VerificationMeta(
+    'remindAt',
+  );
+  @override
+  late final GeneratedColumn<int> remindAt = GeneratedColumn<int>(
+    'remind_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _doneMeta = const VerificationMeta('done');
+  @override
+  late final GeneratedColumn<int> done = GeneratedColumn<int>(
+    'done',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    customerId,
+    remindAt,
+    note,
+    done,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'customer_reminders';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CustomerReminder> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('customer_id')) {
+      context.handle(
+        _customerIdMeta,
+        customerId.isAcceptableOrUnknown(data['customer_id']!, _customerIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_customerIdMeta);
+    }
+    if (data.containsKey('remind_at')) {
+      context.handle(
+        _remindAtMeta,
+        remindAt.isAcceptableOrUnknown(data['remind_at']!, _remindAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_remindAtMeta);
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('done')) {
+      context.handle(
+        _doneMeta,
+        done.isAcceptableOrUnknown(data['done']!, _doneMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CustomerReminder map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CustomerReminder(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      customerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}customer_id'],
+      )!,
+      remindAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}remind_at'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      )!,
+      done: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}done'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CustomerRemindersTable createAlias(String alias) {
+    return $CustomerRemindersTable(attachedDatabase, alias);
+  }
+}
+
+class CustomerReminder extends DataClass
+    implements Insertable<CustomerReminder> {
+  final int id;
+
+  /// references Customers.id (kept as text; no FK cascade so history survives)
+  final String customerId;
+
+  /// ms since epoch
+  final int remindAt;
+  final String note;
+
+  /// 0 = pending, 1 = done
+  final int done;
+  final int createdAt;
+  const CustomerReminder({
+    required this.id,
+    required this.customerId,
+    required this.remindAt,
+    required this.note,
+    required this.done,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['customer_id'] = Variable<String>(customerId);
+    map['remind_at'] = Variable<int>(remindAt);
+    map['note'] = Variable<String>(note);
+    map['done'] = Variable<int>(done);
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  CustomerRemindersCompanion toCompanion(bool nullToAbsent) {
+    return CustomerRemindersCompanion(
+      id: Value(id),
+      customerId: Value(customerId),
+      remindAt: Value(remindAt),
+      note: Value(note),
+      done: Value(done),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory CustomerReminder.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CustomerReminder(
+      id: serializer.fromJson<int>(json['id']),
+      customerId: serializer.fromJson<String>(json['customerId']),
+      remindAt: serializer.fromJson<int>(json['remindAt']),
+      note: serializer.fromJson<String>(json['note']),
+      done: serializer.fromJson<int>(json['done']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'customerId': serializer.toJson<String>(customerId),
+      'remindAt': serializer.toJson<int>(remindAt),
+      'note': serializer.toJson<String>(note),
+      'done': serializer.toJson<int>(done),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  CustomerReminder copyWith({
+    int? id,
+    String? customerId,
+    int? remindAt,
+    String? note,
+    int? done,
+    int? createdAt,
+  }) => CustomerReminder(
+    id: id ?? this.id,
+    customerId: customerId ?? this.customerId,
+    remindAt: remindAt ?? this.remindAt,
+    note: note ?? this.note,
+    done: done ?? this.done,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  CustomerReminder copyWithCompanion(CustomerRemindersCompanion data) {
+    return CustomerReminder(
+      id: data.id.present ? data.id.value : this.id,
+      customerId: data.customerId.present
+          ? data.customerId.value
+          : this.customerId,
+      remindAt: data.remindAt.present ? data.remindAt.value : this.remindAt,
+      note: data.note.present ? data.note.value : this.note,
+      done: data.done.present ? data.done.value : this.done,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CustomerReminder(')
+          ..write('id: $id, ')
+          ..write('customerId: $customerId, ')
+          ..write('remindAt: $remindAt, ')
+          ..write('note: $note, ')
+          ..write('done: $done, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, customerId, remindAt, note, done, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CustomerReminder &&
+          other.id == this.id &&
+          other.customerId == this.customerId &&
+          other.remindAt == this.remindAt &&
+          other.note == this.note &&
+          other.done == this.done &&
+          other.createdAt == this.createdAt);
+}
+
+class CustomerRemindersCompanion extends UpdateCompanion<CustomerReminder> {
+  final Value<int> id;
+  final Value<String> customerId;
+  final Value<int> remindAt;
+  final Value<String> note;
+  final Value<int> done;
+  final Value<int> createdAt;
+  const CustomerRemindersCompanion({
+    this.id = const Value.absent(),
+    this.customerId = const Value.absent(),
+    this.remindAt = const Value.absent(),
+    this.note = const Value.absent(),
+    this.done = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  CustomerRemindersCompanion.insert({
+    this.id = const Value.absent(),
+    required String customerId,
+    required int remindAt,
+    this.note = const Value.absent(),
+    this.done = const Value.absent(),
+    required int createdAt,
+  }) : customerId = Value(customerId),
+       remindAt = Value(remindAt),
+       createdAt = Value(createdAt);
+  static Insertable<CustomerReminder> custom({
+    Expression<int>? id,
+    Expression<String>? customerId,
+    Expression<int>? remindAt,
+    Expression<String>? note,
+    Expression<int>? done,
+    Expression<int>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (customerId != null) 'customer_id': customerId,
+      if (remindAt != null) 'remind_at': remindAt,
+      if (note != null) 'note': note,
+      if (done != null) 'done': done,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  CustomerRemindersCompanion copyWith({
+    Value<int>? id,
+    Value<String>? customerId,
+    Value<int>? remindAt,
+    Value<String>? note,
+    Value<int>? done,
+    Value<int>? createdAt,
+  }) {
+    return CustomerRemindersCompanion(
+      id: id ?? this.id,
+      customerId: customerId ?? this.customerId,
+      remindAt: remindAt ?? this.remindAt,
+      note: note ?? this.note,
+      done: done ?? this.done,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (customerId.present) {
+      map['customer_id'] = Variable<String>(customerId.value);
+    }
+    if (remindAt.present) {
+      map['remind_at'] = Variable<int>(remindAt.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (done.present) {
+      map['done'] = Variable<int>(done.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CustomerRemindersCompanion(')
+          ..write('id: $id, ')
+          ..write('customerId: $customerId, ')
+          ..write('remindAt: $remindAt, ')
+          ..write('note: $note, ')
+          ..write('done: $done, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BackupSettingsTable extends BackupSettings
+    with TableInfo<$BackupSettingsTable, BackupSetting> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BackupSettingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _googleAccountEmailMeta =
+      const VerificationMeta('googleAccountEmail');
+  @override
+  late final GeneratedColumn<String> googleAccountEmail =
+      GeneratedColumn<String>(
+        'google_account_email',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(''),
+      );
+  static const VerificationMeta _autoBackupEnabledMeta = const VerificationMeta(
+    'autoBackupEnabled',
+  );
+  @override
+  late final GeneratedColumn<int> autoBackupEnabled = GeneratedColumn<int>(
+    'auto_backup_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lastAutoBackupAtMeta = const VerificationMeta(
+    'lastAutoBackupAt',
+  );
+  @override
+  late final GeneratedColumn<int> lastAutoBackupAt = GeneratedColumn<int>(
+    'last_auto_backup_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _driveFolderIdMeta = const VerificationMeta(
+    'driveFolderId',
+  );
+  @override
+  late final GeneratedColumn<String> driveFolderId = GeneratedColumn<String>(
+    'drive_folder_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    googleAccountEmail,
+    autoBackupEnabled,
+    lastAutoBackupAt,
+    driveFolderId,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'backup_settings';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BackupSetting> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('google_account_email')) {
+      context.handle(
+        _googleAccountEmailMeta,
+        googleAccountEmail.isAcceptableOrUnknown(
+          data['google_account_email']!,
+          _googleAccountEmailMeta,
+        ),
+      );
+    }
+    if (data.containsKey('auto_backup_enabled')) {
+      context.handle(
+        _autoBackupEnabledMeta,
+        autoBackupEnabled.isAcceptableOrUnknown(
+          data['auto_backup_enabled']!,
+          _autoBackupEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_auto_backup_at')) {
+      context.handle(
+        _lastAutoBackupAtMeta,
+        lastAutoBackupAt.isAcceptableOrUnknown(
+          data['last_auto_backup_at']!,
+          _lastAutoBackupAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('drive_folder_id')) {
+      context.handle(
+        _driveFolderIdMeta,
+        driveFolderId.isAcceptableOrUnknown(
+          data['drive_folder_id']!,
+          _driveFolderIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BackupSetting map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BackupSetting(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      googleAccountEmail: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}google_account_email'],
+      )!,
+      autoBackupEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}auto_backup_enabled'],
+      )!,
+      lastAutoBackupAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_auto_backup_at'],
+      )!,
+      driveFolderId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}drive_folder_id'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $BackupSettingsTable createAlias(String alias) {
+    return $BackupSettingsTable(attachedDatabase, alias);
+  }
+}
+
+class BackupSetting extends DataClass implements Insertable<BackupSetting> {
+  final int id;
+  final String googleAccountEmail;
+
+  /// 0/1 — 24h auto-backup enabled
+  final int autoBackupEnabled;
+
+  /// ms since epoch of last successful auto-backup; 0 = never
+  final int lastAutoBackupAt;
+  final String driveFolderId;
+  final int updatedAt;
+  const BackupSetting({
+    required this.id,
+    required this.googleAccountEmail,
+    required this.autoBackupEnabled,
+    required this.lastAutoBackupAt,
+    required this.driveFolderId,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['google_account_email'] = Variable<String>(googleAccountEmail);
+    map['auto_backup_enabled'] = Variable<int>(autoBackupEnabled);
+    map['last_auto_backup_at'] = Variable<int>(lastAutoBackupAt);
+    map['drive_folder_id'] = Variable<String>(driveFolderId);
+    map['updated_at'] = Variable<int>(updatedAt);
+    return map;
+  }
+
+  BackupSettingsCompanion toCompanion(bool nullToAbsent) {
+    return BackupSettingsCompanion(
+      id: Value(id),
+      googleAccountEmail: Value(googleAccountEmail),
+      autoBackupEnabled: Value(autoBackupEnabled),
+      lastAutoBackupAt: Value(lastAutoBackupAt),
+      driveFolderId: Value(driveFolderId),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory BackupSetting.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BackupSetting(
+      id: serializer.fromJson<int>(json['id']),
+      googleAccountEmail: serializer.fromJson<String>(
+        json['googleAccountEmail'],
+      ),
+      autoBackupEnabled: serializer.fromJson<int>(json['autoBackupEnabled']),
+      lastAutoBackupAt: serializer.fromJson<int>(json['lastAutoBackupAt']),
+      driveFolderId: serializer.fromJson<String>(json['driveFolderId']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'googleAccountEmail': serializer.toJson<String>(googleAccountEmail),
+      'autoBackupEnabled': serializer.toJson<int>(autoBackupEnabled),
+      'lastAutoBackupAt': serializer.toJson<int>(lastAutoBackupAt),
+      'driveFolderId': serializer.toJson<String>(driveFolderId),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+    };
+  }
+
+  BackupSetting copyWith({
+    int? id,
+    String? googleAccountEmail,
+    int? autoBackupEnabled,
+    int? lastAutoBackupAt,
+    String? driveFolderId,
+    int? updatedAt,
+  }) => BackupSetting(
+    id: id ?? this.id,
+    googleAccountEmail: googleAccountEmail ?? this.googleAccountEmail,
+    autoBackupEnabled: autoBackupEnabled ?? this.autoBackupEnabled,
+    lastAutoBackupAt: lastAutoBackupAt ?? this.lastAutoBackupAt,
+    driveFolderId: driveFolderId ?? this.driveFolderId,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  BackupSetting copyWithCompanion(BackupSettingsCompanion data) {
+    return BackupSetting(
+      id: data.id.present ? data.id.value : this.id,
+      googleAccountEmail: data.googleAccountEmail.present
+          ? data.googleAccountEmail.value
+          : this.googleAccountEmail,
+      autoBackupEnabled: data.autoBackupEnabled.present
+          ? data.autoBackupEnabled.value
+          : this.autoBackupEnabled,
+      lastAutoBackupAt: data.lastAutoBackupAt.present
+          ? data.lastAutoBackupAt.value
+          : this.lastAutoBackupAt,
+      driveFolderId: data.driveFolderId.present
+          ? data.driveFolderId.value
+          : this.driveFolderId,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BackupSetting(')
+          ..write('id: $id, ')
+          ..write('googleAccountEmail: $googleAccountEmail, ')
+          ..write('autoBackupEnabled: $autoBackupEnabled, ')
+          ..write('lastAutoBackupAt: $lastAutoBackupAt, ')
+          ..write('driveFolderId: $driveFolderId, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    googleAccountEmail,
+    autoBackupEnabled,
+    lastAutoBackupAt,
+    driveFolderId,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BackupSetting &&
+          other.id == this.id &&
+          other.googleAccountEmail == this.googleAccountEmail &&
+          other.autoBackupEnabled == this.autoBackupEnabled &&
+          other.lastAutoBackupAt == this.lastAutoBackupAt &&
+          other.driveFolderId == this.driveFolderId &&
+          other.updatedAt == this.updatedAt);
+}
+
+class BackupSettingsCompanion extends UpdateCompanion<BackupSetting> {
+  final Value<int> id;
+  final Value<String> googleAccountEmail;
+  final Value<int> autoBackupEnabled;
+  final Value<int> lastAutoBackupAt;
+  final Value<String> driveFolderId;
+  final Value<int> updatedAt;
+  const BackupSettingsCompanion({
+    this.id = const Value.absent(),
+    this.googleAccountEmail = const Value.absent(),
+    this.autoBackupEnabled = const Value.absent(),
+    this.lastAutoBackupAt = const Value.absent(),
+    this.driveFolderId = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  BackupSettingsCompanion.insert({
+    this.id = const Value.absent(),
+    this.googleAccountEmail = const Value.absent(),
+    this.autoBackupEnabled = const Value.absent(),
+    this.lastAutoBackupAt = const Value.absent(),
+    this.driveFolderId = const Value.absent(),
+    required int updatedAt,
+  }) : updatedAt = Value(updatedAt);
+  static Insertable<BackupSetting> custom({
+    Expression<int>? id,
+    Expression<String>? googleAccountEmail,
+    Expression<int>? autoBackupEnabled,
+    Expression<int>? lastAutoBackupAt,
+    Expression<String>? driveFolderId,
+    Expression<int>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (googleAccountEmail != null)
+        'google_account_email': googleAccountEmail,
+      if (autoBackupEnabled != null) 'auto_backup_enabled': autoBackupEnabled,
+      if (lastAutoBackupAt != null) 'last_auto_backup_at': lastAutoBackupAt,
+      if (driveFolderId != null) 'drive_folder_id': driveFolderId,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  BackupSettingsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? googleAccountEmail,
+    Value<int>? autoBackupEnabled,
+    Value<int>? lastAutoBackupAt,
+    Value<String>? driveFolderId,
+    Value<int>? updatedAt,
+  }) {
+    return BackupSettingsCompanion(
+      id: id ?? this.id,
+      googleAccountEmail: googleAccountEmail ?? this.googleAccountEmail,
+      autoBackupEnabled: autoBackupEnabled ?? this.autoBackupEnabled,
+      lastAutoBackupAt: lastAutoBackupAt ?? this.lastAutoBackupAt,
+      driveFolderId: driveFolderId ?? this.driveFolderId,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (googleAccountEmail.present) {
+      map['google_account_email'] = Variable<String>(googleAccountEmail.value);
+    }
+    if (autoBackupEnabled.present) {
+      map['auto_backup_enabled'] = Variable<int>(autoBackupEnabled.value);
+    }
+    if (lastAutoBackupAt.present) {
+      map['last_auto_backup_at'] = Variable<int>(lastAutoBackupAt.value);
+    }
+    if (driveFolderId.present) {
+      map['drive_folder_id'] = Variable<String>(driveFolderId.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BackupSettingsCompanion(')
+          ..write('id: $id, ')
+          ..write('googleAccountEmail: $googleAccountEmail, ')
+          ..write('autoBackupEnabled: $autoBackupEnabled, ')
+          ..write('lastAutoBackupAt: $lastAutoBackupAt, ')
+          ..write('driveFolderId: $driveFolderId, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -14971,6 +15992,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $DocumentSequencesTable documentSequences =
       $DocumentSequencesTable(this);
   late final $BackupMetaTable backupMeta = $BackupMetaTable(this);
+  late final $CustomerRemindersTable customerReminders =
+      $CustomerRemindersTable(this);
+  late final $BackupSettingsTable backupSettings = $BackupSettingsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -15004,6 +16028,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     purchaseReturnItems,
     documentSequences,
     backupMeta,
+    customerReminders,
+    backupSettings,
   ];
 }
 
@@ -15399,20 +16425,22 @@ typedef $$BusinessSettingsTableProcessedTableManager =
       BusinessSetting,
       PrefetchHooks Function()
     >;
-typedef $$UnitsTableCreateCompanionBuilder = UnitsCompanion Function({
-  required String id,
-  required String nameEn,
-  required String nameUr,
-  required String symbol,
-  Value<int> rowid,
-});
-typedef $$UnitsTableUpdateCompanionBuilder = UnitsCompanion Function({
-  Value<String> id,
-  Value<String> nameEn,
-  Value<String> nameUr,
-  Value<String> symbol,
-  Value<int> rowid,
-});
+typedef $$UnitsTableCreateCompanionBuilder =
+    UnitsCompanion Function({
+      required String id,
+      required String nameEn,
+      required String nameUr,
+      required String symbol,
+      Value<int> rowid,
+    });
+typedef $$UnitsTableUpdateCompanionBuilder =
+    UnitsCompanion Function({
+      Value<String> id,
+      Value<String> nameEn,
+      Value<String> nameUr,
+      Value<String> symbol,
+      Value<int> rowid,
+    });
 
 final class $$UnitsTableReferences
     extends BaseReferences<_$AppDatabase, $UnitsTable, Unit> {
@@ -16237,26 +17265,34 @@ class $$UnitConversionsTableTableManager
                     >
                   >(state) {
                     if (fromUnitId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.fromUnitId,
-                        referencedTable: $$UnitConversionsTableReferences
-                            ._fromUnitIdTable(db),
-                        referencedColumn: $$UnitConversionsTableReferences
-                            ._fromUnitIdTable(db)
-                            .id,
-                      ) as T;
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.fromUnitId,
+                                referencedTable:
+                                    $$UnitConversionsTableReferences
+                                        ._fromUnitIdTable(db),
+                                referencedColumn:
+                                    $$UnitConversionsTableReferences
+                                        ._fromUnitIdTable(db)
+                                        .id,
+                              )
+                              as T;
                     }
                     if (toUnitId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.toUnitId,
-                        referencedTable: $$UnitConversionsTableReferences
-                            ._toUnitIdTable(db),
-                        referencedColumn: $$UnitConversionsTableReferences
-                            ._toUnitIdTable(db)
-                            .id,
-                      ) as T;
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.toUnitId,
+                                referencedTable:
+                                    $$UnitConversionsTableReferences
+                                        ._toUnitIdTable(db),
+                                referencedColumn:
+                                    $$UnitConversionsTableReferences
+                                        ._toUnitIdTable(db)
+                                        .id,
+                              )
+                              as T;
                     }
 
                     return state;
@@ -16284,34 +17320,36 @@ typedef $$UnitConversionsTableProcessedTableManager =
       UnitConversion,
       PrefetchHooks Function({bool fromUnitId, bool toUnitId})
     >;
-typedef $$ProductsTableCreateCompanionBuilder = ProductsCompanion Function({
-  required String id,
-  required String name,
-  required String category,
-  required String baseUnitId,
-  Value<int> purchasePrice,
-  Value<int> salePrice,
-  Value<int> reorderNum,
-  Value<int> reorderDen,
-  Value<bool> active,
-  required int createdAt,
-  required int updatedAt,
-  Value<int> rowid,
-});
-typedef $$ProductsTableUpdateCompanionBuilder = ProductsCompanion Function({
-  Value<String> id,
-  Value<String> name,
-  Value<String> category,
-  Value<String> baseUnitId,
-  Value<int> purchasePrice,
-  Value<int> salePrice,
-  Value<int> reorderNum,
-  Value<int> reorderDen,
-  Value<bool> active,
-  Value<int> createdAt,
-  Value<int> updatedAt,
-  Value<int> rowid,
-});
+typedef $$ProductsTableCreateCompanionBuilder =
+    ProductsCompanion Function({
+      required String id,
+      required String name,
+      required String category,
+      required String baseUnitId,
+      Value<int> purchasePrice,
+      Value<int> salePrice,
+      Value<int> reorderNum,
+      Value<int> reorderDen,
+      Value<bool> active,
+      required int createdAt,
+      required int updatedAt,
+      Value<int> rowid,
+    });
+typedef $$ProductsTableUpdateCompanionBuilder =
+    ProductsCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String> category,
+      Value<String> baseUnitId,
+      Value<int> purchasePrice,
+      Value<int> salePrice,
+      Value<int> reorderNum,
+      Value<int> reorderDen,
+      Value<bool> active,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int> rowid,
+    });
 
 final class $$ProductsTableReferences
     extends BaseReferences<_$AppDatabase, $ProductsTable, Product> {
@@ -17215,15 +18253,17 @@ class $$ProductsTableTableManager
                         >
                       >(state) {
                         if (baseUnitId) {
-                          state = state.withJoin(
-                            currentTable: table,
-                            currentColumn: table.baseUnitId,
-                            referencedTable: $$ProductsTableReferences
-                                ._baseUnitIdTable(db),
-                            referencedColumn: $$ProductsTableReferences
-                                ._baseUnitIdTable(db)
-                                .id,
-                          ) as T;
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.baseUnitId,
+                                    referencedTable: $$ProductsTableReferences
+                                        ._baseUnitIdTable(db),
+                                    referencedColumn: $$ProductsTableReferences
+                                        ._baseUnitIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
                         }
 
                         return state;
@@ -17408,36 +18448,42 @@ typedef $$ProductsTableProcessedTableManager =
         bool purchaseReturnItemsRefs,
       })
     >;
-typedef $$CustomersTableCreateCompanionBuilder = CustomersCompanion Function({
-  required String id,
-  required String name,
-  Value<String> phone,
-  Value<String> address,
-  Value<String> code,
-  Value<String> businessName,
-  Value<String> notes,
-  Value<int> openingBalance,
-  Value<int> balance,
-  Value<bool> active,
-  required int createdAt,
-  required int updatedAt,
-  Value<int> rowid,
-});
-typedef $$CustomersTableUpdateCompanionBuilder = CustomersCompanion Function({
-  Value<String> id,
-  Value<String> name,
-  Value<String> phone,
-  Value<String> address,
-  Value<String> code,
-  Value<String> businessName,
-  Value<String> notes,
-  Value<int> openingBalance,
-  Value<int> balance,
-  Value<bool> active,
-  Value<int> createdAt,
-  Value<int> updatedAt,
-  Value<int> rowid,
-});
+typedef $$CustomersTableCreateCompanionBuilder =
+    CustomersCompanion Function({
+      required String id,
+      required String name,
+      Value<String> phone,
+      Value<String> whatsapp,
+      Value<String> address,
+      Value<String> code,
+      Value<String> businessName,
+      Value<String> notes,
+      Value<int> openingBalance,
+      Value<int> balance,
+      Value<bool> active,
+      Value<bool> isFavorite,
+      required int createdAt,
+      required int updatedAt,
+      Value<int> rowid,
+    });
+typedef $$CustomersTableUpdateCompanionBuilder =
+    CustomersCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String> phone,
+      Value<String> whatsapp,
+      Value<String> address,
+      Value<String> code,
+      Value<String> businessName,
+      Value<String> notes,
+      Value<int> openingBalance,
+      Value<int> balance,
+      Value<bool> active,
+      Value<bool> isFavorite,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int> rowid,
+    });
 
 final class $$CustomersTableReferences
     extends BaseReferences<_$AppDatabase, $CustomersTable, Customer> {
@@ -17486,6 +18532,11 @@ class $$CustomersTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get whatsapp => $composableBuilder(
+    column: $table.whatsapp,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get address => $composableBuilder(
     column: $table.address,
     builder: (column) => ColumnFilters(column),
@@ -17518,6 +18569,11 @@ class $$CustomersTableFilterComposer
 
   ColumnFilters<bool> get active => $composableBuilder(
     column: $table.active,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isFavorite => $composableBuilder(
+    column: $table.isFavorite,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -17581,6 +18637,11 @@ class $$CustomersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get whatsapp => $composableBuilder(
+    column: $table.whatsapp,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get address => $composableBuilder(
     column: $table.address,
     builder: (column) => ColumnOrderings(column),
@@ -17616,6 +18677,11 @@ class $$CustomersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isFavorite => $composableBuilder(
+    column: $table.isFavorite,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -17645,6 +18711,9 @@ class $$CustomersTableAnnotationComposer
   GeneratedColumn<String> get phone =>
       $composableBuilder(column: $table.phone, builder: (column) => column);
 
+  GeneratedColumn<String> get whatsapp =>
+      $composableBuilder(column: $table.whatsapp, builder: (column) => column);
+
   GeneratedColumn<String> get address =>
       $composableBuilder(column: $table.address, builder: (column) => column);
 
@@ -17669,6 +18738,11 @@ class $$CustomersTableAnnotationComposer
 
   GeneratedColumn<bool> get active =>
       $composableBuilder(column: $table.active, builder: (column) => column);
+
+  GeneratedColumn<bool> get isFavorite => $composableBuilder(
+    column: $table.isFavorite,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -17733,6 +18807,7 @@ class $$CustomersTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> phone = const Value.absent(),
+                Value<String> whatsapp = const Value.absent(),
                 Value<String> address = const Value.absent(),
                 Value<String> code = const Value.absent(),
                 Value<String> businessName = const Value.absent(),
@@ -17740,6 +18815,7 @@ class $$CustomersTableTableManager
                 Value<int> openingBalance = const Value.absent(),
                 Value<int> balance = const Value.absent(),
                 Value<bool> active = const Value.absent(),
+                Value<bool> isFavorite = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -17747,6 +18823,7 @@ class $$CustomersTableTableManager
                 id: id,
                 name: name,
                 phone: phone,
+                whatsapp: whatsapp,
                 address: address,
                 code: code,
                 businessName: businessName,
@@ -17754,6 +18831,7 @@ class $$CustomersTableTableManager
                 openingBalance: openingBalance,
                 balance: balance,
                 active: active,
+                isFavorite: isFavorite,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -17763,6 +18841,7 @@ class $$CustomersTableTableManager
                 required String id,
                 required String name,
                 Value<String> phone = const Value.absent(),
+                Value<String> whatsapp = const Value.absent(),
                 Value<String> address = const Value.absent(),
                 Value<String> code = const Value.absent(),
                 Value<String> businessName = const Value.absent(),
@@ -17770,6 +18849,7 @@ class $$CustomersTableTableManager
                 Value<int> openingBalance = const Value.absent(),
                 Value<int> balance = const Value.absent(),
                 Value<bool> active = const Value.absent(),
+                Value<bool> isFavorite = const Value.absent(),
                 required int createdAt,
                 required int updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -17777,6 +18857,7 @@ class $$CustomersTableTableManager
                 id: id,
                 name: name,
                 phone: phone,
+                whatsapp: whatsapp,
                 address: address,
                 code: code,
                 businessName: businessName,
@@ -17784,6 +18865,7 @@ class $$CustomersTableTableManager
                 openingBalance: openingBalance,
                 balance: balance,
                 active: active,
+                isFavorite: isFavorite,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -17846,36 +18928,40 @@ typedef $$CustomersTableProcessedTableManager =
       Customer,
       PrefetchHooks Function({bool salesInvoicesRefs})
     >;
-typedef $$SuppliersTableCreateCompanionBuilder = SuppliersCompanion Function({
-  required String id,
-  required String name,
-  Value<String> phone,
-  Value<String> address,
-  Value<String> code,
-  Value<String> businessName,
-  Value<String> notes,
-  Value<int> openingBalance,
-  Value<int> balance,
-  Value<bool> active,
-  required int createdAt,
-  required int updatedAt,
-  Value<int> rowid,
-});
-typedef $$SuppliersTableUpdateCompanionBuilder = SuppliersCompanion Function({
-  Value<String> id,
-  Value<String> name,
-  Value<String> phone,
-  Value<String> address,
-  Value<String> code,
-  Value<String> businessName,
-  Value<String> notes,
-  Value<int> openingBalance,
-  Value<int> balance,
-  Value<bool> active,
-  Value<int> createdAt,
-  Value<int> updatedAt,
-  Value<int> rowid,
-});
+typedef $$SuppliersTableCreateCompanionBuilder =
+    SuppliersCompanion Function({
+      required String id,
+      required String name,
+      Value<String> phone,
+      Value<String> whatsapp,
+      Value<String> address,
+      Value<String> code,
+      Value<String> businessName,
+      Value<String> notes,
+      Value<int> openingBalance,
+      Value<int> balance,
+      Value<bool> active,
+      required int createdAt,
+      required int updatedAt,
+      Value<int> rowid,
+    });
+typedef $$SuppliersTableUpdateCompanionBuilder =
+    SuppliersCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String> phone,
+      Value<String> whatsapp,
+      Value<String> address,
+      Value<String> code,
+      Value<String> businessName,
+      Value<String> notes,
+      Value<int> openingBalance,
+      Value<int> balance,
+      Value<bool> active,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int> rowid,
+    });
 
 final class $$SuppliersTableReferences
     extends BaseReferences<_$AppDatabase, $SuppliersTable, Supplier> {
@@ -17923,6 +19009,11 @@ class $$SuppliersTableFilterComposer
 
   ColumnFilters<String> get phone => $composableBuilder(
     column: $table.phone,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get whatsapp => $composableBuilder(
+    column: $table.whatsapp,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -18021,6 +19112,11 @@ class $$SuppliersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get whatsapp => $composableBuilder(
+    column: $table.whatsapp,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get address => $composableBuilder(
     column: $table.address,
     builder: (column) => ColumnOrderings(column),
@@ -18084,6 +19180,9 @@ class $$SuppliersTableAnnotationComposer
 
   GeneratedColumn<String> get phone =>
       $composableBuilder(column: $table.phone, builder: (column) => column);
+
+  GeneratedColumn<String> get whatsapp =>
+      $composableBuilder(column: $table.whatsapp, builder: (column) => column);
 
   GeneratedColumn<String> get address =>
       $composableBuilder(column: $table.address, builder: (column) => column);
@@ -18173,6 +19272,7 @@ class $$SuppliersTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> phone = const Value.absent(),
+                Value<String> whatsapp = const Value.absent(),
                 Value<String> address = const Value.absent(),
                 Value<String> code = const Value.absent(),
                 Value<String> businessName = const Value.absent(),
@@ -18187,6 +19287,7 @@ class $$SuppliersTableTableManager
                 id: id,
                 name: name,
                 phone: phone,
+                whatsapp: whatsapp,
                 address: address,
                 code: code,
                 businessName: businessName,
@@ -18203,6 +19304,7 @@ class $$SuppliersTableTableManager
                 required String id,
                 required String name,
                 Value<String> phone = const Value.absent(),
+                Value<String> whatsapp = const Value.absent(),
                 Value<String> address = const Value.absent(),
                 Value<String> code = const Value.absent(),
                 Value<String> businessName = const Value.absent(),
@@ -18217,6 +19319,7 @@ class $$SuppliersTableTableManager
                 id: id,
                 name: name,
                 phone: phone,
+                whatsapp: whatsapp,
                 address: address,
                 code: code,
                 businessName: businessName,
@@ -18840,6 +19943,7 @@ typedef $$TransactionsTableCreateCompanionBuilder =
       Value<String> description,
       Value<String> status,
       Value<String?> reversedBy,
+      Value<String> imagePaths,
       required int createdAt,
       Value<int> rowid,
     });
@@ -18857,6 +19961,7 @@ typedef $$TransactionsTableUpdateCompanionBuilder =
       Value<String> description,
       Value<String> status,
       Value<String?> reversedBy,
+      Value<String> imagePaths,
       Value<int> createdAt,
       Value<int> rowid,
     });
@@ -18950,6 +20055,11 @@ class $$TransactionsTableFilterComposer
 
   ColumnFilters<String> get reversedBy => $composableBuilder(
     column: $table.reversedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get imagePaths => $composableBuilder(
+    column: $table.imagePaths,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -19053,6 +20163,11 @@ class $$TransactionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get imagePaths => $composableBuilder(
+    column: $table.imagePaths,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -19109,6 +20224,11 @@ class $$TransactionsTableAnnotationComposer
 
   GeneratedColumn<String> get reversedBy => $composableBuilder(
     column: $table.reversedBy,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get imagePaths => $composableBuilder(
+    column: $table.imagePaths,
     builder: (column) => column,
   );
 
@@ -19181,6 +20301,7 @@ class $$TransactionsTableTableManager
                 Value<String> description = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<String?> reversedBy = const Value.absent(),
+                Value<String> imagePaths = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TransactionsCompanion(
@@ -19196,6 +20317,7 @@ class $$TransactionsTableTableManager
                 description: description,
                 status: status,
                 reversedBy: reversedBy,
+                imagePaths: imagePaths,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -19213,6 +20335,7 @@ class $$TransactionsTableTableManager
                 Value<String> description = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<String?> reversedBy = const Value.absent(),
+                Value<String> imagePaths = const Value.absent(),
                 required int createdAt,
                 Value<int> rowid = const Value.absent(),
               }) => TransactionsCompanion.insert(
@@ -19228,6 +20351,7 @@ class $$TransactionsTableTableManager
                 description: description,
                 status: status,
                 reversedBy: reversedBy,
+                imagePaths: imagePaths,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -19652,15 +20776,17 @@ class $$LedgerEntriesTableTableManager
                     >
                   >(state) {
                     if (txnId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.txnId,
-                        referencedTable: $$LedgerEntriesTableReferences
-                            ._txnIdTable(db),
-                        referencedColumn: $$LedgerEntriesTableReferences
-                            ._txnIdTable(db)
-                            .id,
-                      ) as T;
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.txnId,
+                                referencedTable: $$LedgerEntriesTableReferences
+                                    ._txnIdTable(db),
+                                referencedColumn: $$LedgerEntriesTableReferences
+                                    ._txnIdTable(db)
+                                    .id,
+                              )
+                              as T;
                     }
 
                     return state;
@@ -20262,15 +21388,19 @@ class $$SalesInvoicesTableTableManager
                         >
                       >(state) {
                         if (customerId) {
-                          state = state.withJoin(
-                            currentTable: table,
-                            currentColumn: table.customerId,
-                            referencedTable: $$SalesInvoicesTableReferences
-                                ._customerIdTable(db),
-                            referencedColumn: $$SalesInvoicesTableReferences
-                                ._customerIdTable(db)
-                                .id,
-                          ) as T;
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.customerId,
+                                    referencedTable:
+                                        $$SalesInvoicesTableReferences
+                                            ._customerIdTable(db),
+                                    referencedColumn:
+                                        $$SalesInvoicesTableReferences
+                                            ._customerIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
                         }
 
                         return state;
@@ -20862,37 +21992,49 @@ class $$SalesInvoiceItemsTableTableManager
                         >
                       >(state) {
                         if (invoiceId) {
-                          state = state.withJoin(
-                            currentTable: table,
-                            currentColumn: table.invoiceId,
-                            referencedTable: $$SalesInvoiceItemsTableReferences
-                                ._invoiceIdTable(db),
-                            referencedColumn: $$SalesInvoiceItemsTableReferences
-                                ._invoiceIdTable(db)
-                                .id,
-                          ) as T;
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.invoiceId,
+                                    referencedTable:
+                                        $$SalesInvoiceItemsTableReferences
+                                            ._invoiceIdTable(db),
+                                    referencedColumn:
+                                        $$SalesInvoiceItemsTableReferences
+                                            ._invoiceIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
                         }
                         if (productId) {
-                          state = state.withJoin(
-                            currentTable: table,
-                            currentColumn: table.productId,
-                            referencedTable: $$SalesInvoiceItemsTableReferences
-                                ._productIdTable(db),
-                            referencedColumn: $$SalesInvoiceItemsTableReferences
-                                ._productIdTable(db)
-                                .id,
-                          ) as T;
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.productId,
+                                    referencedTable:
+                                        $$SalesInvoiceItemsTableReferences
+                                            ._productIdTable(db),
+                                    referencedColumn:
+                                        $$SalesInvoiceItemsTableReferences
+                                            ._productIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
                         }
                         if (unitId) {
-                          state = state.withJoin(
-                            currentTable: table,
-                            currentColumn: table.unitId,
-                            referencedTable: $$SalesInvoiceItemsTableReferences
-                                ._unitIdTable(db),
-                            referencedColumn: $$SalesInvoiceItemsTableReferences
-                                ._unitIdTable(db)
-                                .id,
-                          ) as T;
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.unitId,
+                                    referencedTable:
+                                        $$SalesInvoiceItemsTableReferences
+                                            ._unitIdTable(db),
+                                    referencedColumn:
+                                        $$SalesInvoiceItemsTableReferences
+                                            ._unitIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
                         }
 
                         return state;
@@ -21503,15 +22645,19 @@ class $$PurchaseInvoicesTableTableManager
                         >
                       >(state) {
                         if (supplierId) {
-                          state = state.withJoin(
-                            currentTable: table,
-                            currentColumn: table.supplierId,
-                            referencedTable: $$PurchaseInvoicesTableReferences
-                                ._supplierIdTable(db),
-                            referencedColumn: $$PurchaseInvoicesTableReferences
-                                ._supplierIdTable(db)
-                                .id,
-                          ) as T;
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.supplierId,
+                                    referencedTable:
+                                        $$PurchaseInvoicesTableReferences
+                                            ._supplierIdTable(db),
+                                    referencedColumn:
+                                        $$PurchaseInvoicesTableReferences
+                                            ._supplierIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
                         }
 
                         return state;
@@ -22108,43 +23254,49 @@ class $$PurchaseInvoiceItemsTableTableManager
                         >
                       >(state) {
                         if (invoiceId) {
-                          state = state.withJoin(
-                            currentTable: table,
-                            currentColumn: table.invoiceId,
-                            referencedTable:
-                                $$PurchaseInvoiceItemsTableReferences
-                                    ._invoiceIdTable(db),
-                            referencedColumn:
-                                $$PurchaseInvoiceItemsTableReferences
-                                    ._invoiceIdTable(db)
-                                    .id,
-                          ) as T;
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.invoiceId,
+                                    referencedTable:
+                                        $$PurchaseInvoiceItemsTableReferences
+                                            ._invoiceIdTable(db),
+                                    referencedColumn:
+                                        $$PurchaseInvoiceItemsTableReferences
+                                            ._invoiceIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
                         }
                         if (productId) {
-                          state = state.withJoin(
-                            currentTable: table,
-                            currentColumn: table.productId,
-                            referencedTable:
-                                $$PurchaseInvoiceItemsTableReferences
-                                    ._productIdTable(db),
-                            referencedColumn:
-                                $$PurchaseInvoiceItemsTableReferences
-                                    ._productIdTable(db)
-                                    .id,
-                          ) as T;
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.productId,
+                                    referencedTable:
+                                        $$PurchaseInvoiceItemsTableReferences
+                                            ._productIdTable(db),
+                                    referencedColumn:
+                                        $$PurchaseInvoiceItemsTableReferences
+                                            ._productIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
                         }
                         if (unitId) {
-                          state = state.withJoin(
-                            currentTable: table,
-                            currentColumn: table.unitId,
-                            referencedTable:
-                                $$PurchaseInvoiceItemsTableReferences
-                                    ._unitIdTable(db),
-                            referencedColumn:
-                                $$PurchaseInvoiceItemsTableReferences
-                                    ._unitIdTable(db)
-                                    .id,
-                          ) as T;
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.unitId,
+                                    referencedTable:
+                                        $$PurchaseInvoiceItemsTableReferences
+                                            ._unitIdTable(db),
+                                    referencedColumn:
+                                        $$PurchaseInvoiceItemsTableReferences
+                                            ._unitIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
                         }
 
                         return state;
@@ -22172,38 +23324,40 @@ typedef $$PurchaseInvoiceItemsTableProcessedTableManager =
       PurchaseInvoiceItem,
       PrefetchHooks Function({bool invoiceId, bool productId, bool unitId})
     >;
-typedef $$PaymentsTableCreateCompanionBuilder = PaymentsCompanion Function({
-  required String id,
-  required String paymentNo,
-  required int date,
-  required String direction,
-  required String partyKind,
-  required String partyId,
-  required int amountMinor,
-  required String accountId,
-  Value<String> method,
-  Value<String> reference,
-  Value<String> notes,
-  Value<String> status,
-  required int createdAt,
-  Value<int> rowid,
-});
-typedef $$PaymentsTableUpdateCompanionBuilder = PaymentsCompanion Function({
-  Value<String> id,
-  Value<String> paymentNo,
-  Value<int> date,
-  Value<String> direction,
-  Value<String> partyKind,
-  Value<String> partyId,
-  Value<int> amountMinor,
-  Value<String> accountId,
-  Value<String> method,
-  Value<String> reference,
-  Value<String> notes,
-  Value<String> status,
-  Value<int> createdAt,
-  Value<int> rowid,
-});
+typedef $$PaymentsTableCreateCompanionBuilder =
+    PaymentsCompanion Function({
+      required String id,
+      required String paymentNo,
+      required int date,
+      required String direction,
+      required String partyKind,
+      required String partyId,
+      required int amountMinor,
+      required String accountId,
+      Value<String> method,
+      Value<String> reference,
+      Value<String> notes,
+      Value<String> status,
+      required int createdAt,
+      Value<int> rowid,
+    });
+typedef $$PaymentsTableUpdateCompanionBuilder =
+    PaymentsCompanion Function({
+      Value<String> id,
+      Value<String> paymentNo,
+      Value<int> date,
+      Value<String> direction,
+      Value<String> partyKind,
+      Value<String> partyId,
+      Value<int> amountMinor,
+      Value<String> accountId,
+      Value<String> method,
+      Value<String> reference,
+      Value<String> notes,
+      Value<String> status,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
 
 final class $$PaymentsTableReferences
     extends BaseReferences<_$AppDatabase, $PaymentsTable, Payment> {
@@ -22678,15 +23832,17 @@ class $$PaymentsTableTableManager
                         >
                       >(state) {
                         if (accountId) {
-                          state = state.withJoin(
-                            currentTable: table,
-                            currentColumn: table.accountId,
-                            referencedTable: $$PaymentsTableReferences
-                                ._accountIdTable(db),
-                            referencedColumn: $$PaymentsTableReferences
-                                ._accountIdTable(db)
-                                .id,
-                          ) as T;
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.accountId,
+                                    referencedTable: $$PaymentsTableReferences
+                                        ._accountIdTable(db),
+                                    referencedColumn: $$PaymentsTableReferences
+                                        ._accountIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
                         }
 
                         return state;
@@ -23029,15 +24185,19 @@ class $$PaymentAllocationsTableTableManager
                     >
                   >(state) {
                     if (paymentId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.paymentId,
-                        referencedTable: $$PaymentAllocationsTableReferences
-                            ._paymentIdTable(db),
-                        referencedColumn: $$PaymentAllocationsTableReferences
-                            ._paymentIdTable(db)
-                            .id,
-                      ) as T;
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.paymentId,
+                                referencedTable:
+                                    $$PaymentAllocationsTableReferences
+                                        ._paymentIdTable(db),
+                                referencedColumn:
+                                    $$PaymentAllocationsTableReferences
+                                        ._paymentIdTable(db)
+                                        .id,
+                              )
+                              as T;
                     }
 
                     return state;
@@ -23065,26 +24225,28 @@ typedef $$PaymentAllocationsTableProcessedTableManager =
       PaymentAllocation,
       PrefetchHooks Function({bool paymentId})
     >;
-typedef $$ExpensesTableCreateCompanionBuilder = ExpensesCompanion Function({
-  Value<int> id,
-  required int date,
-  required String category,
-  required int amountMinor,
-  required String accountId,
-  Value<String> description,
-  Value<String> reference,
-  required int createdAt,
-});
-typedef $$ExpensesTableUpdateCompanionBuilder = ExpensesCompanion Function({
-  Value<int> id,
-  Value<int> date,
-  Value<String> category,
-  Value<int> amountMinor,
-  Value<String> accountId,
-  Value<String> description,
-  Value<String> reference,
-  Value<int> createdAt,
-});
+typedef $$ExpensesTableCreateCompanionBuilder =
+    ExpensesCompanion Function({
+      Value<int> id,
+      required int date,
+      required String category,
+      required int amountMinor,
+      required String accountId,
+      Value<String> description,
+      Value<String> reference,
+      required int createdAt,
+    });
+typedef $$ExpensesTableUpdateCompanionBuilder =
+    ExpensesCompanion Function({
+      Value<int> id,
+      Value<int> date,
+      Value<String> category,
+      Value<int> amountMinor,
+      Value<String> accountId,
+      Value<String> description,
+      Value<String> reference,
+      Value<int> createdAt,
+    });
 
 final class $$ExpensesTableReferences
     extends BaseReferences<_$AppDatabase, $ExpensesTable, Expense> {
@@ -23397,15 +24559,17 @@ class $$ExpensesTableTableManager
                     >
                   >(state) {
                     if (accountId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.accountId,
-                        referencedTable: $$ExpensesTableReferences
-                            ._accountIdTable(db),
-                        referencedColumn: $$ExpensesTableReferences
-                            ._accountIdTable(db)
-                            .id,
-                      ) as T;
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.accountId,
+                                referencedTable: $$ExpensesTableReferences
+                                    ._accountIdTable(db),
+                                referencedColumn: $$ExpensesTableReferences
+                                    ._accountIdTable(db)
+                                    .id,
+                              )
+                              as T;
                     }
 
                     return state;
@@ -23771,15 +24935,17 @@ class $$IncomeRecordsTableTableManager
                     >
                   >(state) {
                     if (accountId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.accountId,
-                        referencedTable: $$IncomeRecordsTableReferences
-                            ._accountIdTable(db),
-                        referencedColumn: $$IncomeRecordsTableReferences
-                            ._accountIdTable(db)
-                            .id,
-                      ) as T;
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.accountId,
+                                referencedTable: $$IncomeRecordsTableReferences
+                                    ._accountIdTable(db),
+                                referencedColumn: $$IncomeRecordsTableReferences
+                                    ._accountIdTable(db)
+                                    .id,
+                              )
+                              as T;
                     }
 
                     return state;
@@ -24222,26 +25388,34 @@ class $$AccountTransfersTableTableManager
                         >
                       >(state) {
                         if (fromAccountId) {
-                          state = state.withJoin(
-                            currentTable: table,
-                            currentColumn: table.fromAccountId,
-                            referencedTable: $$AccountTransfersTableReferences
-                                ._fromAccountIdTable(db),
-                            referencedColumn: $$AccountTransfersTableReferences
-                                ._fromAccountIdTable(db)
-                                .id,
-                          ) as T;
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.fromAccountId,
+                                    referencedTable:
+                                        $$AccountTransfersTableReferences
+                                            ._fromAccountIdTable(db),
+                                    referencedColumn:
+                                        $$AccountTransfersTableReferences
+                                            ._fromAccountIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
                         }
                         if (toAccountId) {
-                          state = state.withJoin(
-                            currentTable: table,
-                            currentColumn: table.toAccountId,
-                            referencedTable: $$AccountTransfersTableReferences
-                                ._toAccountIdTable(db),
-                            referencedColumn: $$AccountTransfersTableReferences
-                                ._toAccountIdTable(db)
-                                .id,
-                          ) as T;
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.toAccountId,
+                                    referencedTable:
+                                        $$AccountTransfersTableReferences
+                                            ._toAccountIdTable(db),
+                                    referencedColumn:
+                                        $$AccountTransfersTableReferences
+                                            ._toAccountIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
                         }
 
                         return state;
@@ -24657,15 +25831,19 @@ class $$InventoryMovementsTableTableManager
                     >
                   >(state) {
                     if (productId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.productId,
-                        referencedTable: $$InventoryMovementsTableReferences
-                            ._productIdTable(db),
-                        referencedColumn: $$InventoryMovementsTableReferences
-                            ._productIdTable(db)
-                            .id,
-                      ) as T;
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.productId,
+                                referencedTable:
+                                    $$InventoryMovementsTableReferences
+                                        ._productIdTable(db),
+                                referencedColumn:
+                                    $$InventoryMovementsTableReferences
+                                        ._productIdTable(db)
+                                        .id,
+                              )
+                              as T;
                     }
 
                     return state;
@@ -25573,26 +26751,34 @@ class $$ProductionInputsTableTableManager
                     >
                   >(state) {
                     if (batchId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.batchId,
-                        referencedTable: $$ProductionInputsTableReferences
-                            ._batchIdTable(db),
-                        referencedColumn: $$ProductionInputsTableReferences
-                            ._batchIdTable(db)
-                            .id,
-                      ) as T;
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.batchId,
+                                referencedTable:
+                                    $$ProductionInputsTableReferences
+                                        ._batchIdTable(db),
+                                referencedColumn:
+                                    $$ProductionInputsTableReferences
+                                        ._batchIdTable(db)
+                                        .id,
+                              )
+                              as T;
                     }
                     if (productId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.productId,
-                        referencedTable: $$ProductionInputsTableReferences
-                            ._productIdTable(db),
-                        referencedColumn: $$ProductionInputsTableReferences
-                            ._productIdTable(db)
-                            .id,
-                      ) as T;
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.productId,
+                                referencedTable:
+                                    $$ProductionInputsTableReferences
+                                        ._productIdTable(db),
+                                referencedColumn:
+                                    $$ProductionInputsTableReferences
+                                        ._productIdTable(db)
+                                        .id,
+                              )
+                              as T;
                     }
 
                     return state;
@@ -26003,26 +27189,34 @@ class $$ProductionOutputsTableTableManager
                     >
                   >(state) {
                     if (batchId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.batchId,
-                        referencedTable: $$ProductionOutputsTableReferences
-                            ._batchIdTable(db),
-                        referencedColumn: $$ProductionOutputsTableReferences
-                            ._batchIdTable(db)
-                            .id,
-                      ) as T;
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.batchId,
+                                referencedTable:
+                                    $$ProductionOutputsTableReferences
+                                        ._batchIdTable(db),
+                                referencedColumn:
+                                    $$ProductionOutputsTableReferences
+                                        ._batchIdTable(db)
+                                        .id,
+                              )
+                              as T;
                     }
                     if (productId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.productId,
-                        referencedTable: $$ProductionOutputsTableReferences
-                            ._productIdTable(db),
-                        referencedColumn: $$ProductionOutputsTableReferences
-                            ._productIdTable(db)
-                            .id,
-                      ) as T;
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.productId,
+                                referencedTable:
+                                    $$ProductionOutputsTableReferences
+                                        ._productIdTable(db),
+                                referencedColumn:
+                                    $$ProductionOutputsTableReferences
+                                        ._productIdTable(db)
+                                        .id,
+                              )
+                              as T;
                     }
 
                     return state;
@@ -26443,15 +27637,19 @@ class $$SalesReturnsTableTableManager
                         >
                       >(state) {
                         if (invoiceId) {
-                          state = state.withJoin(
-                            currentTable: table,
-                            currentColumn: table.invoiceId,
-                            referencedTable: $$SalesReturnsTableReferences
-                                ._invoiceIdTable(db),
-                            referencedColumn: $$SalesReturnsTableReferences
-                                ._invoiceIdTable(db)
-                                .id,
-                          ) as T;
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.invoiceId,
+                                    referencedTable:
+                                        $$SalesReturnsTableReferences
+                                            ._invoiceIdTable(db),
+                                    referencedColumn:
+                                        $$SalesReturnsTableReferences
+                                            ._invoiceIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
                         }
 
                         return state;
@@ -26896,26 +28094,34 @@ class $$SalesReturnItemsTableTableManager
                     >
                   >(state) {
                     if (returnId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.returnId,
-                        referencedTable: $$SalesReturnItemsTableReferences
-                            ._returnIdTable(db),
-                        referencedColumn: $$SalesReturnItemsTableReferences
-                            ._returnIdTable(db)
-                            .id,
-                      ) as T;
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.returnId,
+                                referencedTable:
+                                    $$SalesReturnItemsTableReferences
+                                        ._returnIdTable(db),
+                                referencedColumn:
+                                    $$SalesReturnItemsTableReferences
+                                        ._returnIdTable(db)
+                                        .id,
+                              )
+                              as T;
                     }
                     if (productId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.productId,
-                        referencedTable: $$SalesReturnItemsTableReferences
-                            ._productIdTable(db),
-                        referencedColumn: $$SalesReturnItemsTableReferences
-                            ._productIdTable(db)
-                            .id,
-                      ) as T;
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.productId,
+                                referencedTable:
+                                    $$SalesReturnItemsTableReferences
+                                        ._productIdTable(db),
+                                referencedColumn:
+                                    $$SalesReturnItemsTableReferences
+                                        ._productIdTable(db)
+                                        .id,
+                              )
+                              as T;
                     }
 
                     return state;
@@ -27348,15 +28554,19 @@ class $$PurchaseReturnsTableTableManager
                         >
                       >(state) {
                         if (invoiceId) {
-                          state = state.withJoin(
-                            currentTable: table,
-                            currentColumn: table.invoiceId,
-                            referencedTable: $$PurchaseReturnsTableReferences
-                                ._invoiceIdTable(db),
-                            referencedColumn: $$PurchaseReturnsTableReferences
-                                ._invoiceIdTable(db)
-                                .id,
-                          ) as T;
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.invoiceId,
+                                    referencedTable:
+                                        $$PurchaseReturnsTableReferences
+                                            ._invoiceIdTable(db),
+                                    referencedColumn:
+                                        $$PurchaseReturnsTableReferences
+                                            ._invoiceIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
                         }
 
                         return state;
@@ -27814,26 +29024,34 @@ class $$PurchaseReturnItemsTableTableManager
                     >
                   >(state) {
                     if (returnId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.returnId,
-                        referencedTable: $$PurchaseReturnItemsTableReferences
-                            ._returnIdTable(db),
-                        referencedColumn: $$PurchaseReturnItemsTableReferences
-                            ._returnIdTable(db)
-                            .id,
-                      ) as T;
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.returnId,
+                                referencedTable:
+                                    $$PurchaseReturnItemsTableReferences
+                                        ._returnIdTable(db),
+                                referencedColumn:
+                                    $$PurchaseReturnItemsTableReferences
+                                        ._returnIdTable(db)
+                                        .id,
+                              )
+                              as T;
                     }
                     if (productId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.productId,
-                        referencedTable: $$PurchaseReturnItemsTableReferences
-                            ._productIdTable(db),
-                        referencedColumn: $$PurchaseReturnItemsTableReferences
-                            ._productIdTable(db)
-                            .id,
-                      ) as T;
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.productId,
+                                referencedTable:
+                                    $$PurchaseReturnItemsTableReferences
+                                        ._productIdTable(db),
+                                referencedColumn:
+                                    $$PurchaseReturnItemsTableReferences
+                                        ._productIdTable(db)
+                                        .id,
+                              )
+                              as T;
                     }
 
                     return state;
@@ -28045,20 +29263,22 @@ typedef $$DocumentSequencesTableProcessedTableManager =
       DocumentSequence,
       PrefetchHooks Function()
     >;
-typedef $$BackupMetaTableCreateCompanionBuilder = BackupMetaCompanion Function({
-  Value<int> id,
-  required int createdAt,
-  required int formatVersion,
-  required String fileName,
-  Value<String> checksum,
-});
-typedef $$BackupMetaTableUpdateCompanionBuilder = BackupMetaCompanion Function({
-  Value<int> id,
-  Value<int> createdAt,
-  Value<int> formatVersion,
-  Value<String> fileName,
-  Value<String> checksum,
-});
+typedef $$BackupMetaTableCreateCompanionBuilder =
+    BackupMetaCompanion Function({
+      Value<int> id,
+      required int createdAt,
+      required int formatVersion,
+      required String fileName,
+      Value<String> checksum,
+    });
+typedef $$BackupMetaTableUpdateCompanionBuilder =
+    BackupMetaCompanion Function({
+      Value<int> id,
+      Value<int> createdAt,
+      Value<int> formatVersion,
+      Value<String> fileName,
+      Value<String> checksum,
+    });
 
 class $$BackupMetaTableFilterComposer
     extends Composer<_$AppDatabase, $BackupMetaTable> {
@@ -28248,6 +29468,475 @@ typedef $$BackupMetaTableProcessedTableManager =
       BackupMetaData,
       PrefetchHooks Function()
     >;
+typedef $$CustomerRemindersTableCreateCompanionBuilder =
+    CustomerRemindersCompanion Function({
+      Value<int> id,
+      required String customerId,
+      required int remindAt,
+      Value<String> note,
+      Value<int> done,
+      required int createdAt,
+    });
+typedef $$CustomerRemindersTableUpdateCompanionBuilder =
+    CustomerRemindersCompanion Function({
+      Value<int> id,
+      Value<String> customerId,
+      Value<int> remindAt,
+      Value<String> note,
+      Value<int> done,
+      Value<int> createdAt,
+    });
+
+class $$CustomerRemindersTableFilterComposer
+    extends Composer<_$AppDatabase, $CustomerRemindersTable> {
+  $$CustomerRemindersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get customerId => $composableBuilder(
+    column: $table.customerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get remindAt => $composableBuilder(
+    column: $table.remindAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get done => $composableBuilder(
+    column: $table.done,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CustomerRemindersTableOrderingComposer
+    extends Composer<_$AppDatabase, $CustomerRemindersTable> {
+  $$CustomerRemindersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get customerId => $composableBuilder(
+    column: $table.customerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get remindAt => $composableBuilder(
+    column: $table.remindAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get done => $composableBuilder(
+    column: $table.done,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CustomerRemindersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CustomerRemindersTable> {
+  $$CustomerRemindersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get customerId => $composableBuilder(
+    column: $table.customerId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get remindAt =>
+      $composableBuilder(column: $table.remindAt, builder: (column) => column);
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<int> get done =>
+      $composableBuilder(column: $table.done, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$CustomerRemindersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CustomerRemindersTable,
+          CustomerReminder,
+          $$CustomerRemindersTableFilterComposer,
+          $$CustomerRemindersTableOrderingComposer,
+          $$CustomerRemindersTableAnnotationComposer,
+          $$CustomerRemindersTableCreateCompanionBuilder,
+          $$CustomerRemindersTableUpdateCompanionBuilder,
+          (
+            CustomerReminder,
+            BaseReferences<
+              _$AppDatabase,
+              $CustomerRemindersTable,
+              CustomerReminder
+            >,
+          ),
+          CustomerReminder,
+          PrefetchHooks Function()
+        > {
+  $$CustomerRemindersTableTableManager(
+    _$AppDatabase db,
+    $CustomerRemindersTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CustomerRemindersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CustomerRemindersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CustomerRemindersTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> customerId = const Value.absent(),
+                Value<int> remindAt = const Value.absent(),
+                Value<String> note = const Value.absent(),
+                Value<int> done = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+              }) => CustomerRemindersCompanion(
+                id: id,
+                customerId: customerId,
+                remindAt: remindAt,
+                note: note,
+                done: done,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String customerId,
+                required int remindAt,
+                Value<String> note = const Value.absent(),
+                Value<int> done = const Value.absent(),
+                required int createdAt,
+              }) => CustomerRemindersCompanion.insert(
+                id: id,
+                customerId: customerId,
+                remindAt: remindAt,
+                note: note,
+                done: done,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$CustomerRemindersTable, CustomerReminder>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $CustomerRemindersTable,
+                    CustomerReminder
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CustomerRemindersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CustomerRemindersTable,
+      CustomerReminder,
+      $$CustomerRemindersTableFilterComposer,
+      $$CustomerRemindersTableOrderingComposer,
+      $$CustomerRemindersTableAnnotationComposer,
+      $$CustomerRemindersTableCreateCompanionBuilder,
+      $$CustomerRemindersTableUpdateCompanionBuilder,
+      (
+        CustomerReminder,
+        BaseReferences<
+          _$AppDatabase,
+          $CustomerRemindersTable,
+          CustomerReminder
+        >,
+      ),
+      CustomerReminder,
+      PrefetchHooks Function()
+    >;
+typedef $$BackupSettingsTableCreateCompanionBuilder =
+    BackupSettingsCompanion Function({
+      Value<int> id,
+      Value<String> googleAccountEmail,
+      Value<int> autoBackupEnabled,
+      Value<int> lastAutoBackupAt,
+      Value<String> driveFolderId,
+      required int updatedAt,
+    });
+typedef $$BackupSettingsTableUpdateCompanionBuilder =
+    BackupSettingsCompanion Function({
+      Value<int> id,
+      Value<String> googleAccountEmail,
+      Value<int> autoBackupEnabled,
+      Value<int> lastAutoBackupAt,
+      Value<String> driveFolderId,
+      Value<int> updatedAt,
+    });
+
+class $$BackupSettingsTableFilterComposer
+    extends Composer<_$AppDatabase, $BackupSettingsTable> {
+  $$BackupSettingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get googleAccountEmail => $composableBuilder(
+    column: $table.googleAccountEmail,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get autoBackupEnabled => $composableBuilder(
+    column: $table.autoBackupEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastAutoBackupAt => $composableBuilder(
+    column: $table.lastAutoBackupAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get driveFolderId => $composableBuilder(
+    column: $table.driveFolderId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$BackupSettingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $BackupSettingsTable> {
+  $$BackupSettingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get googleAccountEmail => $composableBuilder(
+    column: $table.googleAccountEmail,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get autoBackupEnabled => $composableBuilder(
+    column: $table.autoBackupEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastAutoBackupAt => $composableBuilder(
+    column: $table.lastAutoBackupAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get driveFolderId => $composableBuilder(
+    column: $table.driveFolderId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$BackupSettingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BackupSettingsTable> {
+  $$BackupSettingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get googleAccountEmail => $composableBuilder(
+    column: $table.googleAccountEmail,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get autoBackupEnabled => $composableBuilder(
+    column: $table.autoBackupEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lastAutoBackupAt => $composableBuilder(
+    column: $table.lastAutoBackupAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get driveFolderId => $composableBuilder(
+    column: $table.driveFolderId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$BackupSettingsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BackupSettingsTable,
+          BackupSetting,
+          $$BackupSettingsTableFilterComposer,
+          $$BackupSettingsTableOrderingComposer,
+          $$BackupSettingsTableAnnotationComposer,
+          $$BackupSettingsTableCreateCompanionBuilder,
+          $$BackupSettingsTableUpdateCompanionBuilder,
+          (
+            BackupSetting,
+            BaseReferences<_$AppDatabase, $BackupSettingsTable, BackupSetting>,
+          ),
+          BackupSetting,
+          PrefetchHooks Function()
+        > {
+  $$BackupSettingsTableTableManager(
+    _$AppDatabase db,
+    $BackupSettingsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BackupSettingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BackupSettingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BackupSettingsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> googleAccountEmail = const Value.absent(),
+                Value<int> autoBackupEnabled = const Value.absent(),
+                Value<int> lastAutoBackupAt = const Value.absent(),
+                Value<String> driveFolderId = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+              }) => BackupSettingsCompanion(
+                id: id,
+                googleAccountEmail: googleAccountEmail,
+                autoBackupEnabled: autoBackupEnabled,
+                lastAutoBackupAt: lastAutoBackupAt,
+                driveFolderId: driveFolderId,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> googleAccountEmail = const Value.absent(),
+                Value<int> autoBackupEnabled = const Value.absent(),
+                Value<int> lastAutoBackupAt = const Value.absent(),
+                Value<String> driveFolderId = const Value.absent(),
+                required int updatedAt,
+              }) => BackupSettingsCompanion.insert(
+                id: id,
+                googleAccountEmail: googleAccountEmail,
+                autoBackupEnabled: autoBackupEnabled,
+                lastAutoBackupAt: lastAutoBackupAt,
+                driveFolderId: driveFolderId,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$BackupSettingsTable, BackupSetting>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $BackupSettingsTable,
+                    BackupSetting
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$BackupSettingsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BackupSettingsTable,
+      BackupSetting,
+      $$BackupSettingsTableFilterComposer,
+      $$BackupSettingsTableOrderingComposer,
+      $$BackupSettingsTableAnnotationComposer,
+      $$BackupSettingsTableCreateCompanionBuilder,
+      $$BackupSettingsTableUpdateCompanionBuilder,
+      (
+        BackupSetting,
+        BaseReferences<_$AppDatabase, $BackupSettingsTable, BackupSetting>,
+      ),
+      BackupSetting,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -28308,4 +29997,8 @@ class $AppDatabaseManager {
       $$DocumentSequencesTableTableManager(_db, _db.documentSequences);
   $$BackupMetaTableTableManager get backupMeta =>
       $$BackupMetaTableTableManager(_db, _db.backupMeta);
+  $$CustomerRemindersTableTableManager get customerReminders =>
+      $$CustomerRemindersTableTableManager(_db, _db.customerReminders);
+  $$BackupSettingsTableTableManager get backupSettings =>
+      $$BackupSettingsTableTableManager(_db, _db.backupSettings);
 }
