@@ -185,3 +185,26 @@ ThemeData buildDarkTheme() {
     ),
   );
 }
+
+/// True for Urdu written in Urdu (Arabic) script — the locale that must
+/// render in Jameel Noori Nastaleeq with an RTL layout. Roman Urdu
+/// ('ur-Latn') and Sindhi are NOT included: Roman Urdu keeps the default
+/// Latin font + LTR, Sindhi keeps its own rendering path.
+bool isUrduScriptLocale(Locale locale) =>
+    locale.languageCode == 'ur' && locale.scriptCode != 'Latn';
+
+/// Text direction for a locale: RTL for Urdu script, LTR otherwise.
+TextDirection textDirectionForLocale(Locale locale) =>
+    isUrduScriptLocale(locale) ? TextDirection.rtl : TextDirection.ltr;
+
+/// Applies the Urdu-script typeface to a base theme. In Urdu mode every
+/// text style renders in Jameel Noori Nastaleeq (bundled in
+/// assets/fonts/); all other locales keep the platform default font.
+ThemeData themeForLocale(ThemeData base, Locale locale) {
+  if (!isUrduScriptLocale(locale)) return base;
+  return base.copyWith(
+    textTheme: base.textTheme.apply(
+      fontFamily: 'JameelNooriNastaleeq',
+    ),
+  );
+}

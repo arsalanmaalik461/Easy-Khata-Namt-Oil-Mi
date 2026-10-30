@@ -221,7 +221,11 @@ class ReportService {
               t.accountKind.equals(accountKind) &
               t.accountId.equals(accountId) &
               t.date.isBetweenValues(from, to))
-          ..orderBy([(t) => OrderingTerm.asc(t.date)]))
+          ..orderBy([
+            (t) => OrderingTerm.asc(t.date),
+            // Same-timestamp legs (e.g. sale + receipt) stay in entry order.
+            (t) => OrderingTerm.asc(t.id),
+          ]))
         .get();
   }
 

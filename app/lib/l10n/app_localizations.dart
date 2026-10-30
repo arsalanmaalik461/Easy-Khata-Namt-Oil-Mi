@@ -2350,6 +2350,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pick from contacts'**
   String get pickFromContacts;
+
+  /// No description provided for @databaseError.
+  ///
+  /// In en, this message translates to:
+  /// **'Database error: {error}'**
+  String databaseError(Object error);
 }
 
 class _AppLocalizationsDelegate

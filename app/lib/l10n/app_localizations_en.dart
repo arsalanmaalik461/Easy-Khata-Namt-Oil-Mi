@@ -1150,4 +1150,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pickFromContacts => 'Pick from contacts';
+
+  @override
+  String databaseError(Object error) {
+    return 'Database error: $error';
+  }
 }

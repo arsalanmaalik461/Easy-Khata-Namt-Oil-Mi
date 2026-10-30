@@ -31,6 +31,24 @@ class _PartyFormScreenState extends ConsumerState<PartyFormScreen> {
   bool get _isEdit => widget.partyId != null;
 
   @override
+  void initState() {
+    super.initState();
+    // New party: pre-fill the next automatic code (1, 2, 3, …).
+    // The field is display-only; the service assigns the code
+    // authoritatively on save, so a stale preview can never duplicate.
+    if (!_isEdit) {
+      ref
+          .read(accountingProvider)
+          .nextPartyCode(widget.kind)
+          .then((c) {
+        if (mounted && _code.text.isEmpty) {
+          setState(() => _code.text = c);
+        }
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l = L(context);
     final isCust = widget.kind == 'customer';
@@ -93,8 +111,10 @@ class _PartyFormScreenState extends ConsumerState<PartyFormScreen> {
             const SizedBox(height: 12),
             Row(children: [
               Expanded(
+                  // Code is automatic (next number) — shown, never typed.
                   child: TextFormField(
                       controller: _code,
+                      readOnly: true,
                       decoration: InputDecoration(
                           labelText: isCust
                               ? l.customerCode
@@ -202,12 +222,15 @@ class _PartyFormScreenState extends ConsumerState<PartyFormScreen> {
               notes: _notes.text.trim());
         }
       } else if (widget.kind == 'customer') {
+        // Empty code = the service assigns the next automatic code
+        // inside the create transaction (never the preview value,
+        // so concurrent creates cannot duplicate).
         await svc.createCustomer(
             name: _name.text.trim(),
             phone: _phone.text.trim(),
             whatsapp: _whatsapp.text.trim(),
             address: _address.text.trim(),
-            code: _code.text.trim(),
+            code: '',
             businessName: _business.text.trim(),
             notes: _notes.text.trim(),
             openingBalance: opening);
@@ -217,7 +240,7 @@ class _PartyFormScreenState extends ConsumerState<PartyFormScreen> {
             phone: _phone.text.trim(),
             whatsapp: _whatsapp.text.trim(),
             address: _address.text.trim(),
-            code: _code.text.trim(),
+            code: '',
             businessName: _business.text.trim(),
             notes: _notes.text.trim(),
             openingBalance: opening);

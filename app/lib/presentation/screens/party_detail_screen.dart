@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/theme.dart';
 import '../../core/message_templates.dart';
@@ -125,6 +124,8 @@ class _PartyDetailScreenState
                   CrossAxisAlignment.start,
               children: [
                 Text(name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800)),
@@ -271,14 +272,15 @@ class _PartyDetailScreenState
           label: l.sms,
           iconColor: AppColors.smsBlue,
           onTap: () =>
-              _sendReminder(l, name, balance, phone, true),
+              _sendReminder(l, name, balance, phone, viaWhatsapp: false),
         ),
         ActionRowButton(
           icon: Icons.chat_bubble,
           label: l.whatsapp,
           iconColor: AppColors.whatsapp,
-          onTap: () => _sendReminder(
-              l, name, balance, whatsapp.isNotEmpty ? whatsapp : phone, false),
+          onTap: () => _sendReminder(l, name, balance,
+              whatsapp.isNotEmpty ? whatsapp : phone,
+              viaWhatsapp: true),
         ),
       ],
     );
@@ -361,7 +363,18 @@ class _PartyDetailScreenState
                     .toLowerCase()
                     .contains(_q))
                 .toList();
-        return LedgerTable(
+        // Both gross totals for THIS party only (never one side alone).
+        // Search filtering does not change them.
+        final totalDiye = rows.fold<int>(
+            0, (a, e) => a + (e.debitMinor as int));
+        final totalLiye = rows.fold<int>(
+            0, (a, e) => a + (e.creditMinor as int));
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _totalsCard(l, totalDiye, totalLiye),
+            const SizedBox(height: 12),
+            LedgerTable(
           timeHeader: l.time.toUpperCase(),
           diyeHeader: l.diye.toUpperCase(),
           liyeHeader: l.liye.toUpperCase(),
@@ -382,8 +395,67 @@ class _PartyDetailScreenState
                   imgMap[e.txnId as String] ?? const [],
             );
           }).toList(),
+            ),
+          ],
         );
       },
+    );
+  }
+
+  /// Both gross totals for THIS party only: total DIYE and total LIYE.
+  /// The net balance stays in the hero above; this card never shows one
+  /// side alone.
+  Widget _totalsCard(l, int diye, int liye) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final diyeC = dark ? AppColors.diyeDark : AppColors.diye;
+    final liyeC = dark ? AppColors.liyeDark : AppColors.liye;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l.diye,
+                      style: TextStyle(
+                          color: diyeC,
+                          fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 4),
+                  Text(fmtMoney(context, diye),
+                      softWrap: false,
+                      style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800)),
+                ],
+              ),
+            ),
+            Container(
+                width: 1,
+                height: 48,
+                color: Theme.of(context).dividerColor),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l.liye,
+                      style: TextStyle(
+                          color: liyeC,
+                          fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 4),
+                  Text(fmtMoney(context, liye),
+                      softWrap: false,
+                      style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -628,8 +700,18 @@ class _PartyDetailScreenState
     );
   }
 
-  Future<void> _sendReminder(l, String name, int balance,
-      String rawPhone, bool viaSms) async {
+  /// Reminder WITH the party's full ledger as a PDF. SMS/WhatsApp
+  /// deep links cannot attach files, so both the SMS and WhatsApp buttons
+  /// first try the system share sheet carrying the message text + the
+  /// generated ledger PDF (supplier ledgers use the supplier statement
+  /// path, never the customer-only query — R1/C10).
+  ///
+  /// If the PDF share fails for any reason, the reminder falls back to
+  /// the plain-text deep link for the button that was tapped (SMS or
+  /// WhatsApp), so a reminder never fails outright: before this fix a
+  /// supplier reminder died here with "Could not share reminder".
+  Future<void> _sendReminder(l, String name, int balance, String rawPhone,
+      {required bool viaWhatsapp}) async {
     final msg =
         await _pickTemplate(l, name, balance);
     if (msg == null || !mounted) return;
@@ -640,24 +722,73 @@ class _PartyDetailScreenState
       }
       return;
     }
+    final db = ref.read(databaseProvider);
+    final actions = PartyActions(db);
+    Future<void> fallback() async {
+      final fb = viaWhatsapp
+          ? await actions.openWhatsAppChat(
+              digits: digits, message: msg)
+          : await actions.openSmsChat(digits: digits, message: msg);
+      if (mounted && !fb.isOk) showSnack(context, fb.error, error: true);
+    }
+
     try {
-      final uri = viaSms
-          ? Uri.parse(
-              'sms:$digits?body=${Uri.encodeComponent(msg)}')
-          : Uri.parse(
-              'https://wa.me/$digits?text=${Uri.encodeComponent(msg)}');
-      final ok = await launchUrl(uri,
-          mode: LaunchMode.externalApplication);
-      if (!ok && mounted) {
-        showSnack(context, l.errorGeneric, error: true);
-      }
-    } catch (e) {
-      if (mounted) showSnack(context, '$e', error: true);
+      final res = await actions.shareReminderWithLedgerPdf(
+        customerId: widget.partyId,
+        message: msg,
+        kind: widget.kind,
+      );
+      if (!mounted) return;
+      if (!res.isOk) await fallback();
+    } catch (_) {
+      if (mounted) await fallback();
     }
   }
 
+  /// Statement PDF via the system share sheet (WhatsApp appears there).
+  /// The user first chooses the full ledger ("All") or a custom date
+  /// range; the PDF then contains exactly that range's ledger.
+  /// Cancelling the date picker returns to the choice sheet.
   Future<void> _sharePdf(l) async {
-    // Statement PDF via the system share sheet (WhatsApp appears there).
+    final range = await showModalBottomSheet<_StatementRange>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (c) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading:
+                  const Icon(Icons.picture_as_pdf_outlined),
+              title: Text(l.statement),
+              subtitle: Text(l.all),
+              onTap: () =>
+                  Navigator.pop(c, const _StatementRange.all()),
+            ),
+            ListTile(
+              leading: const Icon(Icons.date_range_outlined),
+              title: Text(l.exportCustomRange),
+              onTap: () async {
+                final picked = await showDateRangePicker(
+                  context: context,
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime.now(),
+                );
+                if (picked != null && context.mounted) {
+                  Navigator.pop(
+                      c,
+                      _StatementRange(
+                          picked.start, picked.end));
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+    if (range == null || !mounted) return;
     final db = ref.read(databaseProvider);
     final isUr =
         Localizations.localeOf(context).languageCode != 'en';
@@ -669,9 +800,12 @@ class _PartyDetailScreenState
       final bal = await _partyBalance();
       final res = await PartyActions(db).shareStatementPdf(
         customerId: widget.partyId,
+        kind: widget.kind,
         customerName: name,
         balanceMinor: bal,
         businessName: business,
+        from: range.from,
+        to: range.to,
         urdu: isUr,
       );
       if (!mounted) return;
@@ -708,4 +842,12 @@ class _PartyDetailScreenState
         .getSingle();
     return p.balance;
   }
+}
+
+/// Date range for a statement PDF export: null from/to = full ledger.
+class _StatementRange {
+  final DateTime? from;
+  final DateTime? to;
+  const _StatementRange(this.from, this.to);
+  const _StatementRange.all() : from = null, to = null;
 }

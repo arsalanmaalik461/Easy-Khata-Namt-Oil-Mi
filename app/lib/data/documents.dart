@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
-import '../core/money.dart';
 import 'db.dart';
 import 'reports.dart';
 
@@ -182,27 +181,90 @@ class DocumentService {
     return doc.save();
   }
 
+  /// Customer ledger PDF for exactly [from]..[to] (ms since epoch).
+  ///
+  /// Uses [pw.MultiPage] so long ledgers flow across pages instead of
+  /// throwing a single-page overflow (which previously made the share
+  /// silently fail for customers with many transactions). Shows the
+  /// opening balance (balance just before [from]) and an explicit
+  /// "no transactions" line when the range is empty, so a filtered
+  /// statement never looks like a broken/blank PDF.
   Future<List<int>> customerStatementPdf(
-      String customerId, int from, int to) async {
-    final cust = await (db.select(db.customers)
-          ..where((t) => t.id.equals(customerId)))
-        .getSingle();
+      String customerId, int from, int to) =>
+      _partyStatementPdf(
+          kind: 'customer', partyId: customerId, from: from, to: to);
+
+  /// Supplier ledger PDF — same layout as the customer statement, but
+  /// read from [db.suppliers] and the 'supplier' ledger. A supplier id
+  /// must NEVER be routed through the customer-only query: it is not
+  /// in [db.customers], so getSingle() there throws (C10).
+  Future<List<int>> supplierStatementPdf(
+      String supplierId, int from, int to) =>
+      _partyStatementPdf(
+          kind: 'supplier', partyId: supplierId, from: from, to: to);
+
+  /// Shared statement builder for customers and suppliers. [kind] is
+  /// 'customer' or 'supplier' and selects both the party table and the
+  /// ledger accountKind, so the two paths can never be mixed up.
+  Future<List<int>> _partyStatementPdf({
+    required String kind,
+    required String partyId,
+    required int from,
+    required int to,
+  }) async {
+    final isCust = kind == 'customer';
+    final String partyName;
+    final int partyBalance;
+    if (isCust) {
+      final cust = await (db.select(db.customers)
+            ..where((t) => t.id.equals(partyId)))
+          .getSingle();
+      partyName = cust.name;
+      partyBalance = cust.balance;
+    } else {
+      final sup = await (db.select(db.suppliers)
+            ..where((t) => t.id.equals(partyId)))
+          .getSingle();
+      partyName = sup.name;
+      partyBalance = sup.balance;
+    }
     final entries = await (db.select(db.ledgerEntries)
           ..where((t) =>
-              t.accountKind.equals('customer') &
-              t.accountId.equals(customerId) &
+              t.accountKind.equals(kind) &
+              t.accountId.equals(partyId) &
               t.date.isBetweenValues(from, to))
           ..orderBy([(t) => OrderingTerm.asc(t.date)]))
         .get();
+    final openingRows = await (db.select(db.ledgerEntries)
+          ..where((t) =>
+              t.accountKind.equals(kind) &
+              t.accountId.equals(partyId) &
+              t.date.isSmallerThanValue(from))
+          ..orderBy([(t) => OrderingTerm.desc(t.date)])
+          ..limit(1))
+        .get();
+    final opening = openingRows.isEmpty
+        ? 0
+        : openingRows.first.balanceAfterMinor;
+    final closing =
+        entries.isEmpty ? opening : entries.last.balanceAfterMinor;
     final business = await _businessName();
     final doc = pw.Document();
-    doc.addPage(pw.Page(
+    doc.addPage(pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
-      build: (_) => pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          _header(business, 'Customer Statement', cust.name,
-              '${_date(from)} — ${_date(to)}'),
+      build: (_) => [
+        // NOTE: plain '-' separator, NOT '—' (U+2014): Helvetica cannot
+        // draw the em dash, so it renders as a missing glyph (R2).
+        _header(business, isCust ? 'Customer Statement' : 'Supplier Statement',
+            partyName, '${_date(from)} - ${_date(to)}'),
+        pw.Text('Opening balance: ${_money(opening)}'),
+        pw.SizedBox(height: 8),
+        if (entries.isEmpty)
+          pw.Text(
+              'No transactions in this period.',
+              style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold))
+        else
           pw.TableHelper.fromTextArray(
             headers: ['Date', 'Description', 'Debit', 'Credit', 'Balance'],
             data: entries
@@ -215,13 +277,16 @@ class DocumentService {
                     ])
                 .toList(),
           ),
-          pw.SizedBox(height: 12),
-          pw.Text(
-              'Outstanding: ${_money(cust.balance)}',
-              style: pw.TextStyle(
-                  fontWeight: pw.FontWeight.bold)),
-        ],
-      ),
+        pw.SizedBox(height: 12),
+        pw.Text(
+            'Closing balance: ${_money(closing)}',
+            style: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold)),
+        pw.Text(
+            'Outstanding: ${_money(partyBalance)}',
+            style: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold)),
+      ],
     ));
     return doc.save();
   }
@@ -276,7 +341,7 @@ class DocumentService {
       build: (_) => pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          _header(business, 'Summary', '${_date(from)} — ${_date(to)}',
+          _header(business, 'Summary', '${_date(from)} - ${_date(to)}',
               _date(DateTime.now().millisecondsSinceEpoch)),
           _totals([
             ('Revenue', pl.revenue.minor),

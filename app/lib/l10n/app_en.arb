@@ -374,5 +374,11 @@
  "fingerprintHint": "Unlock with your fingerprint",
  "fingerprintNotAvailable": "Fingerprint not available on this device",
  "fingerprintFailed": "Fingerprint verification failed",
- "pickFromContacts": "Pick from contacts"
+ "pickFromContacts": "Pick from contacts",
+ "databaseError": "Database error: {error}",
+ "@databaseError": {
+  "placeholders": {
+   "error": {}
+  }
+ }
 }

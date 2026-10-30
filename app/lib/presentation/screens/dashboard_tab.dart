@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme.dart';
 import '../../core/money.dart';
 import '../providers.dart';
+import '../widgets/responsive.dart';
 import '../widgets/ui.dart';
 import 'party_detail_screen.dart';
 import 'party_form_screen.dart';
@@ -79,10 +80,13 @@ class DashboardTab extends ConsumerWidget {
       children: [
         Icon(icon, color: Colors.white70, size: 20),
         const SizedBox(height: 4),
-        Text(label,
-            style: const TextStyle(color: Colors.white70, fontSize: 12)),
+        NoSplitLabel(label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+                color: Colors.white70, fontSize: 12)),
         const SizedBox(height: 2),
-        Text(fmtMoney(c, m.minor),
+        AmountText(fmtMoney(c, m.minor),
+            textAlign: TextAlign.center,
             style: const TextStyle(
                 color: Colors.white,
                 fontSize: 20,

@@ -1148,4 +1148,9 @@ class AppLocalizationsSd extends AppLocalizations {
 
   @override
   String get pickFromContacts => 'رابطن مان چونڊيو';
+
+  @override
+  String databaseError(Object error) {
+    return 'Database error: $error';
+  }
 }

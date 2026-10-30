@@ -3,6 +3,7 @@ import 'package:namt_oil_mil/l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/theme.dart';
+import 'responsive.dart';
 
 AppLocalizations L(BuildContext c) => AppLocalizations.of(c);
 
@@ -47,6 +48,9 @@ class MoneyText extends StatelessWidget {
           : (minor > 0 ? AppColors.success : null);
     }
     return Text(fmtMoney(context, minor),
+        maxLines: 1,
+        softWrap: false,
+        overflow: TextOverflow.ellipsis,
         style: base.copyWith(
             color: color,
             fontWeight: FontWeight.w700,
@@ -229,7 +233,7 @@ class QuickAction extends StatelessWidget {
             child: Icon(icon, color: c, size: 28),
           ),
           const SizedBox(height: 6),
-          Text(label,
+          NoSplitLabel(label,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.labelSmall),
         ],

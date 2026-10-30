@@ -374,5 +374,11 @@
  "fingerprintHint": "فنگر پرنٹ سے ان لاک کریں",
  "fingerprintNotAvailable": "اس ڈیوائس پر فنگر پرنٹ دستیاب نہیں",
  "fingerprintFailed": "فنگر پرنٹ کی تصدیق ناکام ہوئی",
- "pickFromContacts": "رابطوں سے چنیں"
+ "pickFromContacts": "رابطوں سے چنیں",
+ "databaseError": "ڈیٹا بیس میں خرابی: {error}",
+ "@databaseError": {
+  "placeholders": {
+   "error": {}
+  }
+ }
 }

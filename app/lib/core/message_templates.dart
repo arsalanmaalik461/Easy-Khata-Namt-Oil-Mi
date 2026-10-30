@@ -21,21 +21,21 @@ String buildReminderMessage({
       .replaceAll('{date}', date);
 }
 
-/// Built-in Urdu template (default).
+/// Built-in Urdu template (default) — pure Urdu script, not Roman Urdu.
 const String kReminderTemplateUr =
-    'Assalam-o-Alaikum {name}! {business} ki taraf se yaad dehani: '
-    'aap ka Rs {amount} ka hisaab baqi hai. '
-    'Baraye meherbani jald ada kar dein. Shukriya!';
+    'السلام علیکم {name}! {business} کی طرف سے یاد دہانی: '
+    'آپ کا {amount} روپے کا حساب باقی ہے۔ '
+    'براہ مہربانی جلد ادا کر دیں۔ شکریہ!';
 
 /// Built-in English template.
 const String kReminderTemplateEn =
     'Hello {name}, reminder from {business}: your balance of Rs {amount} '
     'is pending. Please pay at your earliest. Thank you!';
 
-/// Built-in bill-share template (sent with the PDF statement).
+/// Built-in bill-share template (sent with the PDF statement) — Urdu script.
 const String kBillShareTemplateUr =
-    'Assalam-o-Alaikum {name}! {business} se aap ke hisaab ki tafseel '
-    '(PDF) is message ke saath hai. Kul baqaya: Rs {amount}.';
+    'السلام علیکم {name}! {business} سے آپ کے حساب کی تفصیل '
+    '(PDF) اس پیغام کے ساتھ ہے۔ کل بقایا: {amount} روپے۔';
 
 const String kBillShareTemplateEn =
     'Hello {name}, your account statement (PDF) from {business} is attached. '

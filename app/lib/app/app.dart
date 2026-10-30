@@ -40,10 +40,16 @@ class NamtApp extends ConsumerWidget {
     return MaterialApp(
       title: 'Namt Oil Mil',
       debugShowCheckedModeBanner: false,
-      theme: buildLightTheme(),
-      darkTheme: buildDarkTheme(),
+      theme: themeForLocale(buildLightTheme(), locale),
+      darkTheme: themeForLocale(buildDarkTheme(), locale),
       themeMode: mode,
       locale: locale,
+      // Deterministic layout direction: RTL for Urdu script, LTR otherwise.
+      // (Applied here rather than relying on framework locale heuristics.)
+      builder: (context, child) => Directionality(
+        textDirection: textDirectionForLocale(locale),
+        child: child ?? const SizedBox.shrink(),
+      ),
       localizationsDelegates: [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -73,7 +79,9 @@ class _Gate extends ConsumerWidget {
       loading: () => const Scaffold(
           body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(
-          body: Center(child: Text('Database error: $e'))),
+          body: Center(
+              child: Text(AppLocalizations.of(context)
+                  .databaseError(e.toString())))),
       data: (s) {
         if (s == null || !s.onboarded) return const OnboardingScreen();
         final hasPin = ref.watch(hasPinProvider);

@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../app/theme.dart';
+import 'responsive.dart';
 import 'ui.dart' show L, fmtDate, showSnack;
 
 /// White stat card: UPPERCASE gray label, big black value, small subtitle.
@@ -32,17 +33,15 @@ class StatCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label.toUpperCase(), style: ekLabelStyle(context)),
+          NoSplitLabel(label.toUpperCase(),
+              style: ekLabelStyle(context)),
           const SizedBox(height: 8),
-          Text(value,
+          AmountText(value,
               style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                   color: valueColor ??
-                      (dark ? AppColors.inkDark : AppColors.ink),
-                  fontFeatures: const [
-                    FontFeature.tabularFigures()
-                  ])),
+                      (dark ? AppColors.inkDark : AppColors.ink))),
           if (subtitle != null) ...[
             const SizedBox(height: 4),
             Text(subtitle!,
@@ -95,16 +94,13 @@ class HeroBalanceCard extends StatelessWidget {
             child: Icon(icon, color: Colors.white, size: 22),
           ),
           const SizedBox(height: 10),
-          Text(amount,
+          AmountText(amount,
               style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: strong,
-                  fontFeatures: const [
-                    FontFeature.tabularFigures()
-                  ])),
+                  color: strong)),
           const SizedBox(height: 2),
-          Text(label,
+          NoSplitLabel(label,
               style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -136,13 +132,14 @@ class ActionRowButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, color: iconColor, size: 30),
             const SizedBox(height: 4),
-            Text(label,
+            NoSplitLabel(label,
+                textAlign: TextAlign.center,
                 style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -345,6 +342,7 @@ class LedgerTable extends StatelessWidget {
                         children: [
                           if (r.isDiye)
                             Text(r.amountLabel,
+                                softWrap: false,
                                 style: TextStyle(
                                     fontSize: 15,
                                     fontWeight:
@@ -356,6 +354,7 @@ class LedgerTable extends StatelessWidget {
                                     ])),
                           if (!r.isDiye)
                             Text(r.amountLabel,
+                                softWrap: false,
                                 style: TextStyle(
                                     fontSize: 15,
                                     fontWeight:
@@ -739,7 +738,7 @@ class DateRangeField extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           child: Container(
             padding: const EdgeInsets.symmetric(
-                horizontal: 14, vertical: 10),
+                horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: dark
                   ? AppColors.cardDark
@@ -747,25 +746,35 @@ class DateRangeField extends StatelessWidget {
               borderRadius: BorderRadius.circular(24),
             ),
             child: Row(
-              mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(Icons.calendar_today_outlined,
                     size: 16),
                 const SizedBox(width: 6),
-                Text('$label: ${fmtDate(context, ms)}',
-                    style: const TextStyle(fontSize: 13)),
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment:
+                        AlignmentDirectional.centerStart,
+                    child: Text(
+                        '$label: ${fmtDate(context, ms)}',
+                        maxLines: 1,
+                        softWrap: false,
+                        style:
+                            const TextStyle(fontSize: 13)),
+                  ),
+                ),
               ],
             ),
           ),
         );
     return Row(
       children: [
-        pill(fromLabel, fromMs, true),
+        Expanded(child: pill(fromLabel, fromMs, true)),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 8),
           child: Icon(Icons.arrow_forward, size: 16),
         ),
-        pill(toLabel, toMs, false),
+        Expanded(child: pill(toLabel, toMs, false)),
       ],
     );
   }

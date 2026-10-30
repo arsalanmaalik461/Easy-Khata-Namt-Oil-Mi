@@ -76,37 +76,53 @@ class _SalesDashboardScreenState
                 child: ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    Row(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final titleBlock = Column(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                          children: [
+                            Text(l.salesDashboard,
+                                style: TextStyle(
+                                    fontSize: 28,
+                                    fontWeight:
+                                        FontWeight.w800,
+                                    color: dark
+                                        ? AppColors.inkDark
+                                        : AppColors.ink)),
+                            const SizedBox(height: 2),
+                            Text(
+                                settings?.businessName ??
+                                    l.appName,
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    color: dark
+                                        ? AppColors.mutedDark
+                                        : AppColors.muted)),
+                          ],
+                        );
+                        // Narrow phones: stack the chips under the title
+                        // instead of squeezing them beside it.
+                        if (constraints.maxWidth < 380) {
+                          return Column(
                             crossAxisAlignment:
                                 CrossAxisAlignment.start,
                             children: [
-                              Text(l.salesDashboard,
-                                  style: TextStyle(
-                                      fontSize: 28,
-                                      fontWeight:
-                                          FontWeight.w800,
-                                      color: dark
-                                          ? AppColors.inkDark
-                                          : AppColors.ink)),
-                              const SizedBox(height: 2),
-                              Text(
-                                  settings?.businessName ??
-                                      l.appName,
-                                  style: TextStyle(
-                                      fontSize: 14,
-                                      color: dark
-                                          ? AppColors.mutedDark
-                                          : AppColors.muted)),
+                              titleBlock,
+                              const SizedBox(height: 10),
+                              _rangeChips(l, dark),
                             ],
-                          ),
-                        ),
-                        _rangeChips(l, dark),
-                      ],
+                          );
+                        }
+                        return Row(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: titleBlock),
+                            _rangeChips(l, dark),
+                          ],
+                        );
+                      },
                     ),
                     const SizedBox(height: 12),
                     if (_range == _Range.custom)
@@ -196,7 +212,7 @@ class _SalesDashboardScreenState
         borderRadius: BorderRadius.circular(20),
         child: Container(
           padding: const EdgeInsets.symmetric(
-              horizontal: 14, vertical: 8),
+              horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: sel
                 ? (dark
@@ -250,13 +266,18 @@ class _SalesDashboardScreenState
             : const Color(0xFFEFF2F5),
         borderRadius: BorderRadius.circular(24),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          chip(_Range.hafta, l.hafta),
-          chip(_Range.maheena, l.maheena),
-          chip(_Range.custom, l.apniMarzi),
-        ],
+      // Chips scroll instead of overflowing when labels are long
+      // (e.g. Urdu labels on a narrow phone).
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            chip(_Range.hafta, l.hafta),
+            chip(_Range.maheena, l.maheena),
+            chip(_Range.custom, l.apniMarzi),
+          ],
+        ),
       ),
     );
   }
@@ -267,13 +288,16 @@ class _SalesDashboardScreenState
         : _range == _Range.maheena
             ? l.thisMonth
             : l.custom;
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 1.35,
+    return LayoutBuilder(
+      builder: (context, constraints) => GridView.count(
+        crossAxisCount: 2,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        // Taller cards on narrow phones: more room for amounts/labels
+        // (esp. wider Urdu labels) instead of mid-word splits.
+        childAspectRatio: constraints.maxWidth < 360 ? 1.2 : 1.35,
       children: [
         StatCard(
             label: l.kullSales,
@@ -293,7 +317,8 @@ class _SalesDashboardScreenState
             value: fmtMoney(context, summary.udhaar.minor),
             subtitle: '— $sub',
             valueColor: AppColors.diye),
-      ],
+        ],
+      ),
     );
   }
 

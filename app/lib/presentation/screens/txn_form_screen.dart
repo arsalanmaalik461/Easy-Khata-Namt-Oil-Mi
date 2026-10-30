@@ -172,19 +172,28 @@ class _TxnFormScreenState extends ConsumerState<TxnFormScreen> {
   Widget _datePill(l) {
     return InkWell(
       onTap: () async {
-        final picked = await showDatePicker(
+        // Default = real now (set at init). Manual override: pick a date
+        // (keeps the current time-of-day), then a time; cancelling the
+        // time picker keeps the existing time instead of midnight.
+        final current =
+            DateTime.fromMillisecondsSinceEpoch(_dateMs);
+        final pickedDate = await showDatePicker(
           context: context,
-          initialDate:
-              DateTime.fromMillisecondsSinceEpoch(_dateMs),
+          initialDate: current,
           firstDate: DateTime(2020),
-          lastDate: DateTime.now()
-              .add(const Duration(days: 365)),
+          lastDate:
+              DateTime.now().add(const Duration(days: 365)),
         );
-        if (picked != null) {
-          setState(() => _dateMs = DateTime(picked.year,
-                  picked.month, picked.day)
-              .millisecondsSinceEpoch);
-        }
+        if (pickedDate == null) return;
+        if (!mounted) return;
+        final pickedTime = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay.fromDateTime(current),
+        );
+        final time = pickedTime ?? TimeOfDay.fromDateTime(current);
+        setState(() => _dateMs = DateTime(pickedDate.year,
+                pickedDate.month, pickedDate.day, time.hour, time.minute)
+            .millisecondsSinceEpoch);
       },
       borderRadius: BorderRadius.circular(24),
       child: Container(
@@ -200,7 +209,7 @@ class _TxnFormScreenState extends ConsumerState<TxnFormScreen> {
             const Icon(Icons.calendar_today_outlined,
                 size: 16),
             const SizedBox(width: 6),
-            Text(fmtDate(context, _dateMs),
+            Text(fmtDateTime(context, _dateMs),
                 style: const TextStyle(fontSize: 13)),
           ],
         ),
@@ -392,7 +401,8 @@ class _TxnFormScreenState extends ConsumerState<TxnFormScreen> {
             toAccountId: _toAccountId!,
             amount: amount,
             reference: refNo,
-            notes: desc),
+            notes: desc,
+            date: _dateMs),
       };
       if (!result.isOk) {
         if (mounted) showSnack(context, result.error, error: true);

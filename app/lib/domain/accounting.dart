@@ -99,6 +99,7 @@ class TxnCategory {
   static const otherIncome = 'other_income';
   static const cashTransfer = 'cash_transfer';
   static const salesReturn = 'sales_return';
+  static const salesReturnRefund = 'sales_return_refund';
   static const purchaseReturn = 'purchase_return';
   static const production = 'production';
   static const adjustment = 'adjustment';

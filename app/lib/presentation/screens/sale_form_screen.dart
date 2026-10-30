@@ -50,6 +50,8 @@ class _SaleFormScreenState extends ConsumerState<SaleFormScreen> {
   final _notes = TextEditingController();
   String? _partyId;
   String? _accountId;
+  // Real timestamp by default; user can override via the date pill below.
+  int _dateMs = DateTime.now().millisecondsSinceEpoch;
   final List<_Line> _lines = [];
 
   bool get _isSale => widget.mode == DocMode.sale;
@@ -146,6 +148,8 @@ class _SaleFormScreenState extends ConsumerState<SaleFormScreen> {
                 controller: _notes,
                 decoration:
                     InputDecoration(labelText: l.notes)),
+            const SizedBox(height: 12),
+            _datePill(l),
             const SizedBox(height: 24),
             FilledButton(
                 onPressed: () => _save(grand), child: Text(l.save)),
@@ -363,6 +367,52 @@ class _SaleFormScreenState extends ConsumerState<SaleFormScreen> {
     }
   }
 
+  /// Date + time pill: defaults to the real now; tapping lets the user
+  /// override both (date keeps the time-of-day, then a time picker).
+  Widget _datePill(l) {
+    return InkWell(
+      onTap: () async {
+        final current =
+            DateTime.fromMillisecondsSinceEpoch(_dateMs);
+        final pickedDate = await showDatePicker(
+          context: context,
+          initialDate: current,
+          firstDate: DateTime(2020),
+          lastDate:
+              DateTime.now().add(const Duration(days: 365)),
+        );
+        if (pickedDate == null) return;
+        if (!mounted) return;
+        final pickedTime = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay.fromDateTime(current),
+        );
+        final time = pickedTime ?? TimeOfDay.fromDateTime(current);
+        setState(() => _dateMs = DateTime(pickedDate.year,
+                pickedDate.month, pickedDate.day, time.hour, time.minute)
+            .millisecondsSinceEpoch);
+      },
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.calendar_today_outlined, size: 16),
+            const SizedBox(width: 6),
+            Text(fmtDateTime(context, _dateMs),
+                style: const TextStyle(fontSize: 13)),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _save(int grand) async {
     final l = L(context);
     if (!_form.currentState!.validate()) return;
@@ -389,6 +439,7 @@ class _SaleFormScreenState extends ConsumerState<SaleFormScreen> {
               paidNow: Money(_paidMinor()),
               accountId: _accountId,
               notes: _notes.text.trim(),
+              date: _dateMs,
             )
           : await svc.createPurchase(
               supplierId: _partyId!,
@@ -398,6 +449,7 @@ class _SaleFormScreenState extends ConsumerState<SaleFormScreen> {
               paidNow: Money(_paidMinor()),
               accountId: _accountId,
               notes: _notes.text.trim(),
+              date: _dateMs,
             );
       if (!res.isOk) {
         if (mounted) showSnack(context, res.error, error: true);

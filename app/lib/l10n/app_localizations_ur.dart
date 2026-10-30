@@ -1149,6 +1149,11 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get pickFromContacts => 'رابطوں سے چنیں';
+
+  @override
+  String databaseError(Object error) {
+    return 'ڈیٹا بیس میں خرابی: $error';
+  }
 }
 
 /// The translations for Urdu, using the Latin script (`ur_Latn`).
